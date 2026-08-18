@@ -3,8 +3,8 @@ const path = require('path');
 
 /**
  * Parse Kimi Code session logs
- * Kimi Code stores sessions in ~/.kimi-code/sessions/<workspace>/<session>/
- * Each session has state.json and logs/kimi-code.log
+ * Sessions: ~/.kimi-code/sessions/<workspace>/<session>/
+ * Conversation: agents/main/wire.jsonl
  */
 class KimiCodeParser {
   constructor() {
@@ -18,7 +18,6 @@ class KimiCodeParser {
     const sessions = [];
     for (const basePath of this.sessionPaths) {
       if (!fs.existsSync(basePath)) continue;
-      // Walk workspace directories
       const workspaces = fs.readdirSync(basePath);
       for (const workspace of workspaces) {
         const workspacePath = path.join(basePath, workspace);
@@ -30,15 +29,8 @@ class KimiCodeParser {
           if (fs.existsSync(stateFile)) {
             try {
               const state = JSON.parse(fs.readFileSync(stateFile, 'utf-8'));
-              sessions.push({
-                path: sessionPath,
-                id: sessionDir,
-                state,
-                workspace,
-              });
-            } catch (e) {
-              // Skip malformed
-            }
+              sessions.push({ path: sessionPath, id: sessionDir, state, workspace });
+            } catch (e) { /* skip */ }
           }
         }
       }
@@ -60,7 +52,7 @@ class KimiCodeParser {
       retries: 0,
     };
 
-    // Parse state.json
+    // Parse state.json for timing
     if (session.state) {
       parsed.startTime = session.state.createdAt ? new Date(session.state.createdAt) : null;
       parsed.endTime = session.state.updatedAt ? new Date(session.state.updatedAt) : null;
@@ -69,75 +61,94 @@ class KimiCodeParser {
       }
     }
 
-    // Parse log file
-    const logFile = path.join(session.path, 'logs', 'kimi-code.log');
-    if (fs.existsSync(logFile)) {
-      try {
-        const content = fs.readFileSync(logFile, 'utf-8');
-        const lines = content.split('\n').filter(Boolean);
+    // Parse wire.jsonl for conversation data
+    const wireFile = path.join(session.path, 'agents', 'main', 'wire.jsonl');
+    if (!fs.existsSync(wireFile)) return parsed;
 
-        for (const line of lines) {
-          // Parse log entries like: [2026-07-17T01:55:00.810Z] INFO message
-          const match = line.match(/^\[([^\]]+)\]\s+(\w+)\s+(.*)$/);
-          if (match) {
-            const [, timestamp, level, message] = match;
-            const ts = new Date(timestamp);
+    try {
+      const content = fs.readFileSync(wireFile, 'utf-8');
+      const lines = content.split('\n').filter(Boolean);
 
-            if (level === 'ERROR') {
-              parsed.errors.push({ message, timestamp: ts });
+      for (const line of lines) {
+        try {
+          const entry = JSON.parse(line);
+          const timestamp = entry.time ? new Date(entry.time) : null;
+
+          if (timestamp) {
+            if (!parsed.startTime || timestamp < parsed.startTime) parsed.startTime = timestamp;
+            if (!parsed.endTime || timestamp > parsed.endTime) parsed.endTime = timestamp;
+          }
+
+          // User messages: turn.prompt
+          if (entry.type === 'turn.prompt' && entry.input) {
+            const text = Array.isArray(entry.input)
+              ? entry.input.filter(i => i.type === 'text').map(i => i.text).join(' ')
+              : String(entry.input);
+            parsed.messages.push({ role: 'user', content: text.substring(0, 200), timestamp });
+          }
+
+          // Tool calls: nested in context.append_loop_event
+          if (entry.type === 'context.append_loop_event' && entry.event) {
+            const event = entry.event;
+
+            // Tool call
+            if (event.type === 'tool.call') {
+              parsed.toolCalls.push({
+                name: event.name || 'unknown',
+                timestamp,
+                duration: null,
+                success: true,
+                error: null,
+                input: event.description || event.args?.command?.substring(0, 50) || null,
+              });
             }
 
-            // Detect tool calls from log patterns
-            if (message.includes('tool_call') || message.includes('executing tool')) {
-              const toolMatch = message.match(/tool[_\s]?call[:\s]+(\w+)/i);
-              if (toolMatch) {
-                parsed.toolCalls.push({
-                  name: toolMatch[1],
-                  timestamp: ts,
-                  duration: null,
-                  success: !message.includes('error'),
-                  error: message.includes('error') ? message : null,
+            // Tool result (check for errors)
+            if (event.type === 'tool.result' && parsed.toolCalls.length > 0) {
+              const lastTool = parsed.toolCalls[parsed.toolCalls.length - 1];
+              if (event.error || event.isError) {
+                lastTool.success = false;
+                lastTool.error = String(event.error || 'Tool error').substring(0, 100);
+              }
+            }
+
+            // Assistant text output
+            if (event.type === 'content.part' && event.part) {
+              if (event.part.type === 'text' && event.part.text) {
+                parsed.messages.push({
+                  role: 'assistant',
+                  content: event.part.text.substring(0, 200),
+                  timestamp,
                 });
               }
             }
-
-            // Detect retries
-            if (message.toLowerCase().includes('retry')) {
-              parsed.retries++;
-            }
           }
-        }
-      } catch (e) {
-        // File read error
+
+          // Token usage: usage.record
+          if (entry.type === 'usage.record' && entry.usage) {
+            parsed.totalTokens.input += entry.usage.inputOther || 0;
+            parsed.totalTokens.input += entry.usage.inputCacheRead || 0;
+            parsed.totalTokens.output += entry.usage.output || 0;
+          }
+
+          // Errors
+          if (entry.type === 'tool.result' && entry.event?.error) {
+            parsed.errors.push({
+              message: String(entry.event.error).substring(0, 100),
+              timestamp,
+            });
+          }
+        } catch (e) { /* skip malformed */ }
       }
+    } catch (e) { /* file read error */ }
+
+    // Recalculate duration
+    if (parsed.startTime && parsed.endTime) {
+      parsed.duration = (parsed.endTime - parsed.startTime) / 1000;
     }
 
-    // Parse agent state files for token usage
-    const agentsDir = path.join(session.path, 'agents');
-    if (fs.existsSync(agentsDir)) {
-      try {
-        const agents = fs.readdirSync(agentsDir);
-        for (const agent of agents) {
-          const agentStateFile = path.join(agentsDir, agent, 'state.json');
-          if (fs.existsSync(agentStateFile)) {
-            try {
-              const agentState = JSON.parse(fs.readFileSync(agentStateFile, 'utf-8'));
-              if (agentState.tokenUsage) {
-                parsed.totalTokens.input += agentState.tokenUsage.input || 0;
-                parsed.totalTokens.output += agentState.tokenUsage.output || 0;
-              }
-            } catch (e) {
-              // Skip
-            }
-          }
-        }
-      } catch (e) {
-        // Skip
-      }
-    }
-
-    // Estimate cost
-    parsed.cost = (parsed.totalTokens.input * 3 + parsed.totalTokens.output * 15) / 1000000;
+    // Estimate cost (Kimi/mimo pricing estimate)
+    parsed.cost = (parsed.totalTokens.input * 2 + parsed.totalTokens.output * 10) / 1000000;
 
     return parsed;
   }

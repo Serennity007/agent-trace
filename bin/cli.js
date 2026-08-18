@@ -127,32 +127,37 @@ async function main() {
 
   // Analyze each session
   for (const session of allSessions) {
-    let parsed;
-    if (session.parser.parseSession.length > 1) {
-      parsed = session.parser.parseSession(session.data || session);
-    } else {
-      parsed = session.parser.parseSession(session.file || session);
-    }
+    try {
+      let parsed;
+      // Pass session data to parser
+      if (session.data) {
+        parsed = session.parser.parseSession(session.data);
+      } else {
+        parsed = session.parser.parseSession(session);
+      }
 
-    const stats = SessionAnalyzer.getStats(parsed);
-    const costBreakdown = SessionAnalyzer.getCostBreakdown(parsed);
-    const toolUsage = SessionAnalyzer.getToolUsage(parsed.toolCalls);
-    const anomalies = SessionAnalyzer.detectAnomalies(parsed);
-    const timeline = session.parser.getTimeline ? session.parser.getTimeline(parsed.messages) : [];
+      const stats = SessionAnalyzer.getStats(parsed);
+      const costBreakdown = SessionAnalyzer.getCostBreakdown(parsed);
+      const toolUsage = SessionAnalyzer.getToolUsage(parsed.toolCalls);
+      const anomalies = SessionAnalyzer.detectAnomalies(parsed);
+      const timeline = session.parser.getTimeline ? session.parser.getTimeline(parsed.messages) : [];
 
-    if (opts.json) {
-      console.log(JSON.stringify({
-        agent: session.agentName,
-        session: parsed.id,
-        stats,
-        costBreakdown,
-        toolUsage,
-        anomalies,
-        timeline: opts.verbose ? timeline : undefined,
-      }, null, 2));
-    } else {
-      console.log(chalk.bold(`  Agent: ${session.agentName}`));
-      Reporter.display(parsed, stats, costBreakdown, toolUsage, anomalies, timeline);
+      if (opts.json) {
+        console.log(JSON.stringify({
+          agent: session.agentName,
+          session: parsed.id,
+          stats,
+          costBreakdown,
+          toolUsage,
+          anomalies,
+          timeline: opts.verbose ? timeline : undefined,
+        }, null, 2));
+      } else {
+        console.log(chalk.bold(`  Agent: ${session.agentName}`));
+        Reporter.display(parsed, stats, costBreakdown, toolUsage, anomalies, timeline);
+      }
+    } catch (err) {
+      console.log(chalk.yellow(`  ⚠️  Error parsing session ${session.id}: ${err.message}`));
     }
   }
 }

@@ -3,7 +3,8 @@ const path = require('path');
 
 /**
  * Parse Claude Code session logs
- * Claude Code stores sessions as .jsonl files in ~/.claude/projects/<project>/
+ * Sessions are .jsonl files in ~/.claude/projects/<project>/
+ * Each line is a JSON object with type, timestamp, message, etc.
  */
 class ClaudeCodeParser {
   constructor() {
@@ -17,16 +18,14 @@ class ClaudeCodeParser {
     const sessions = [];
     for (const basePath of this.sessionPaths) {
       if (!fs.existsSync(basePath)) continue;
-      // Walk project directories
       const projects = fs.readdirSync(basePath);
       for (const project of projects) {
         const projectPath = path.join(basePath, project);
         if (!fs.statSync(projectPath).isDirectory()) continue;
         const files = fs.readdirSync(projectPath).filter(f => f.endsWith('.jsonl'));
         for (const file of files) {
-          const filePath = path.join(projectPath, file);
           sessions.push({
-            file: filePath,
+            file: path.join(projectPath, file),
             id: file.replace('.jsonl', ''),
             project,
           });
@@ -36,7 +35,8 @@ class ClaudeCodeParser {
     return sessions;
   }
 
-  parseSession(filePath) {
+  parseSession(sessionData) {
+    const filePath = typeof sessionData === 'string' ? sessionData : sessionData.file;
     const parsed = {
       id: path.basename(filePath, '.jsonl'),
       startTime: null,
@@ -65,40 +65,80 @@ class ClaudeCodeParser {
             if (!parsed.endTime || timestamp > parsed.endTime) parsed.endTime = timestamp;
           }
 
-          // Process user/assistant messages
-          if (entry.type === 'user' || entry.type === 'assistant') {
-            const msg = entry.message || {};
+          // Process user messages
+          if (entry.type === 'user' && entry.message) {
+            const msg = entry.message;
+            const content = typeof msg.content === 'string'
+              ? msg.content
+              : Array.isArray(msg.content)
+                ? msg.content.filter(c => c.type === 'text').map(c => c.text).join(' ')
+                : '';
             parsed.messages.push({
-              role: entry.type,
-              content: typeof msg.content === 'string' ? msg.content.substring(0, 200) : '',
+              role: 'user',
+              content: content.substring(0, 200),
               timestamp,
-              tokens: null,
             });
           }
 
-          // Process tool calls
-          if (entry.type === 'tool_use' || entry.type === 'tool_call') {
-            parsed.toolCalls.push({
-              name: entry.name || entry.tool_name || 'unknown',
+          // Process assistant messages (may contain tool_use blocks)
+          if (entry.type === 'assistant' && entry.message) {
+            const msg = entry.message;
+            let textContent = '';
+            let hasToolUse = false;
+
+            if (typeof msg.content === 'string') {
+              textContent = msg.content;
+            } else if (Array.isArray(msg.content)) {
+              for (const block of msg.content) {
+                if (block.type === 'text') {
+                  textContent += block.text;
+                } else if (block.type === 'tool_use') {
+                  hasToolUse = true;
+                  parsed.toolCalls.push({
+                    name: block.name || 'unknown',
+                    timestamp,
+                    duration: null,
+                    success: true, // Will be updated if we see tool_result with error
+                    error: null,
+                    input: block.input ? JSON.stringify(block.input).substring(0, 100) : null,
+                  });
+                }
+              }
+            }
+
+            // Track tokens from message.usage
+            if (msg.usage) {
+              parsed.totalTokens.input += msg.usage.input_tokens || 0;
+              parsed.totalTokens.output += msg.usage.output_tokens || 0;
+            }
+
+            parsed.messages.push({
+              role: 'assistant',
+              content: textContent.substring(0, 200),
               timestamp,
-              duration: null,
-              success: !entry.error,
-              error: entry.error || null,
+              hasToolUse,
             });
+          }
+
+          // Process tool results (errors)
+          if (entry.type === 'tool_result' && entry.message) {
+            const isError = entry.message.is_error || false;
+            if (isError && parsed.toolCalls.length > 0) {
+              // Mark the last tool call as failed
+              const lastTool = parsed.toolCalls[parsed.toolCalls.length - 1];
+              lastTool.success = false;
+              lastTool.error = typeof entry.message.content === 'string'
+                ? entry.message.content.substring(0, 100)
+                : 'Tool error';
+            }
           }
 
           // Track errors
-          if (entry.type === 'error' || entry.error) {
+          if (entry.type === 'error' || (entry.message && entry.message.is_error)) {
             parsed.errors.push({
-              message: entry.error || entry.message || 'Unknown error',
+              message: entry.message?.content || 'Unknown error',
               timestamp,
             });
-          }
-
-          // Track tokens from usage
-          if (entry.usage) {
-            parsed.totalTokens.input += entry.usage.input_tokens || 0;
-            parsed.totalTokens.output += entry.usage.output_tokens || 0;
           }
         } catch (e) {
           // Skip malformed lines
@@ -113,7 +153,7 @@ class ClaudeCodeParser {
       parsed.duration = (parsed.endTime - parsed.startTime) / 1000;
     }
 
-    // Estimate cost
+    // Estimate cost (Claude 3.5 Sonnet pricing)
     parsed.cost = (parsed.totalTokens.input * 3 + parsed.totalTokens.output * 15) / 1000000;
 
     return parsed;

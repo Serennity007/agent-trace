@@ -87,7 +87,11 @@ class Reporter {
       for (const entry of timeline.slice(-20)) {
         const time = entry.timestamp ? this.formatTime(entry.timestamp) : '      ?';
         const duration = entry.duration ? `+${this.formatDurationShort(entry.duration)}` : '';
-        const preview = entry.contentPreview.replace(/\n/g, ' ').substring(0, 50);
+        const preview = entry.contentPreview
+          .replace(/\x1b\[[0-9;]*m/g, '') // Remove ANSI escape sequences
+          .replace(/[\t\r]/g, ' ')          // Replace tabs/CR with space
+          .replace(/\n/g, ' ')              // Replace newlines
+          .substring(0, 50);
 
         // Role styling
         let roleIcon, roleColor;
