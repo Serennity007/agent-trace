@@ -111,9 +111,30 @@ Options:
 | Agent | Status | Config Path |
 |-------|--------|-------------|
 | **OpenCode** | ✅ Supported | `~/.opencode/sessions/` |
-| **Kimi Code** | 🔜 Coming soon | `~/.kimi-code/sessions/` |
-| **Claude Code** | 🔜 Coming soon | `~/.claude/sessions/` |
-| **Codex** | 🔜 Coming soon | `~/.codex/sessions/` |
+| **Claude Code** | ✅ Supported | `~/.claude/projects/` |
+| **Kimi Code** | ✅ Supported | `~/.kimi-code/sessions/` |
+| **Codex** | ✅ Supported | `~/.codex/sessions/` |
+| **Cursor** | 🔜 Coming soon | — |
+| **Windsurf** | 🔜 Coming soon | — |
+| **Cline** | 🔜 Coming soon | — |
+| **Continue** | 🔜 Coming soon | — |
+
+### Auto-Detection
+
+By default, agent-trace scans all known paths and auto-detects which agent you're using:
+
+```bash
+agent-trace  # Auto-detect and analyze all sessions
+```
+
+### Force Specific Agent
+
+```bash
+agent-trace -a claude-code   # Only analyze Claude Code
+agent-trace -a kimi-code     # Only analyze Kimi Code
+agent-trace -a opencode      # Only analyze OpenCode
+agent-trace -a codex         # Only analyze Codex
+```
 
 ## CI Integration
 

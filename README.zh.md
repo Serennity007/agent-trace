@@ -111,9 +111,30 @@ agent-trace [选项] [目录]
 | Agent | 状态 | 配置路径 |
 |-------|------|---------|
 | **OpenCode** | ✅ 已支持 | `~/.opencode/sessions/` |
-| **Kimi Code** | 🔜 即将支持 | `~/.kimi-code/sessions/` |
-| **Claude Code** | 🔜 即将支持 | `~/.claude/sessions/` |
-| **Codex** | 🔜 即将支持 | `~/.codex/sessions/` |
+| **Claude Code** | ✅ 已支持 | `~/.claude/projects/` |
+| **Kimi Code** | ✅ 已支持 | `~/.kimi-code/sessions/` |
+| **Codex** | ✅ 已支持 | `~/.codex/sessions/` |
+| **Cursor** | 🔜 即将支持 | — |
+| **Windsurf** | 🔜 即将支持 | — |
+| **Cline** | 🔜 即将支持 | — |
+| **Continue** | 🔜 即将支持 | — |
+
+### 自动检测
+
+默认情况下，agent-trace 会扫描所有已知路径，自动检测你使用的 Agent：
+
+```bash
+agent-trace  # 自动检测并分析所有会话
+```
+
+### 指定 Agent
+
+```bash
+agent-trace -a claude-code   # 只分析 Claude Code
+agent-trace -a kimi-code     # 只分析 Kimi Code
+agent-trace -a opencode      # 只分析 OpenCode
+agent-trace -a codex         # 只分析 Codex
+```
 
 ## CI 集成
 

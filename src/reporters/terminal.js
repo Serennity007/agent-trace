@@ -1,5 +1,10 @@
 const chalk = require('chalk') || { green: s => s, red: s => s, yellow: s => s, gray: s => s, bold: s => s, cyan: s => s, magenta: s => s, blue: s => s };
-const figures = require('figures') || { tick: '✓', cross: '✗', arrow: '→' };
+let figures;
+try {
+  figures = require('figures');
+} catch {
+  figures = { tick: '✓', cross: '✗', arrow: '→' };
+}
 
 /**
  * Display session trace report
