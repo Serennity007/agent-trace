@@ -1,0 +1,45 @@
+{
+  "name": "agent-trace",
+  "version": "1.0.0",
+  "description": "Trace your AI coding agent - costs, tokens, tool health, session timeline",
+  "main": "src/index.js",
+  "bin": {
+    "agent-trace": "./bin/cli.js",
+    "at": "./bin/cli.js"
+  },
+  "scripts": {
+    "start": "node bin/cli.js",
+    "test": "node test/test.js"
+  },
+  "keywords": [
+    "ai",
+    "agent",
+    "trace",
+    "debug",
+    "opencode",
+    "claude-code",
+    "kimi-code",
+    "codex",
+    "cli",
+    "developer-tools"
+  ],
+  "author": "liangzhengtao",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/liangzhengtao/agent-trace.git"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "files": [
+    "bin/",
+    "src/",
+    "LICENSE",
+    "README.md"
+  ],
+  "dependencies": {
+    "chalk": "^4.1.2",
+    "commander": "^11.1.0"
+  }
+}
