@@ -1,4 +1,9 @@
-const chalk = require('chalk') || { green: s => s, red: s => s, yellow: s => s, gray: s => s, bold: s => s, cyan: s => s, magenta: s => s, blue: s => s };
+let chalk;
+try {
+  chalk = require('chalk');
+} catch {
+  chalk = { green: s => s, red: s => s, yellow: s => s, gray: s => s, bold: s => s, cyan: s => s, magenta: s => s, blue: s => s, dim: s => s, white: s => s };
+}
 let figures;
 try {
   figures = require('figures');
@@ -7,103 +12,155 @@ try {
 }
 
 /**
- * Display session trace report
+ * Display session trace report with chat-style timeline
  */
 class Reporter {
   static display(parsed, stats, costBreakdown, toolUsage, anomalies, timeline) {
+    const TERM_WIDTH = 80;
+    const DIVIDER = chalk.gray('  ' + '─'.repeat(TERM_WIDTH - 4));
+
     console.log('');
     console.log(chalk.bold.cyan('  🔍 Agent Trace Report'));
-    console.log(chalk.gray('  ─────────────────────────────────────────────────────'));
+    console.log(DIVIDER);
     console.log('');
 
     // Session Overview
     this.section('📊 Session Overview', [
-      `Duration: ${this.formatDuration(parsed.duration)}`,
-      `Messages: ${stats.totalMessages} (User: ${stats.userMessages}, Assistant: ${stats.assistantMessages})`,
-      `Tool Calls: ${stats.totalToolCalls} (${stats.uniqueTools.length} unique tools)`,
-      `Errors: ${stats.errors}`,
-      `Retries: ${stats.retries}`,
+      `Duration: ${chalk.bold(this.formatDuration(parsed.duration))}`,
+      `Messages: ${chalk.bold(stats.totalMessages)} (User: ${chalk.cyan(stats.userMessages)}, AI: ${chalk.green(stats.assistantMessages)}, Tool: ${chalk.yellow(stats.toolMessages)})`,
+      `Tool Calls: ${chalk.bold(stats.totalToolCalls)} (${stats.uniqueTools.length} unique tools)`,
+      `Errors: ${stats.errors > 0 ? chalk.red(stats.errors) : chalk.green(stats.errors)}`,
+      `Retries: ${stats.retries > 0 ? chalk.yellow(stats.retries) : chalk.green(stats.retries)}`,
     ]);
 
     // Cost Analysis
     this.section('💰 Cost Analysis', [
-      `Input Tokens: ${costBreakdown.input.tokens.toLocaleString()} ($${costBreakdown.input.cost.toFixed(4)})`,
-      `Output Tokens: ${costBreakdown.output.tokens.toLocaleString()} ($${costBreakdown.output.cost.toFixed(4)})`,
-      `Total Tokens: ${costBreakdown.total.tokens.toLocaleString()}`,
-      `Estimated Cost: $${costBreakdown.total.cost.toFixed(4)}`,
+      `Input Tokens:  ${chalk.bold(costBreakdown.input.tokens.toLocaleString())}  ${chalk.gray(`($${costBreakdown.input.cost.toFixed(4)})`)}`,
+      `Output Tokens: ${chalk.bold(costBreakdown.output.tokens.toLocaleString())}  ${chalk.gray(`($${costBreakdown.output.cost.toFixed(4)})`)}`,
+      `Total Tokens:  ${chalk.bold(costBreakdown.total.tokens.toLocaleString())}`,
+      `Estimated Cost: ${chalk.bold.green(`$${costBreakdown.total.cost.toFixed(4)}`)}`,
     ]);
 
     // Tool Health
     if (Object.keys(toolUsage).length > 0) {
-      console.log('');
       console.log(chalk.bold('  🔧 Tool Health'));
-      console.log(chalk.gray('  ─────────────────────────────────────────────────────'));
+      console.log(DIVIDER);
       for (const [name, data] of Object.entries(toolUsage)) {
-        const successRate = data.successRate;
-        const status = successRate >= 90 ? chalk.green('✓') : successRate >= 70 ? chalk.yellow('⚠') : chalk.red('✗');
-        const rate = successRate >= 90 ? chalk.green(`${successRate.toFixed(0)}%`) : successRate >= 70 ? chalk.yellow(`${successRate.toFixed(0)}%`) : chalk.red(`${successRate.toFixed(0)}%`);
-        console.log(`  ${status} ${name}: ${data.count} calls, ${rate} success, avg ${data.avgDuration.toFixed(0)}ms`);
+        const rate = data.successRate;
+        const icon = rate >= 90 ? chalk.green('✓') : rate >= 70 ? chalk.yellow('⚠') : chalk.red('✗');
+        const rateStr = rate >= 90 ? chalk.green(`${rate.toFixed(0)}%`) : rate >= 70 ? chalk.yellow(`${rate.toFixed(0)}%`) : chalk.red(`${rate.toFixed(0)}%`);
+        const bar = this.progressBar(rate, 20);
+        console.log(`  ${icon} ${chalk.bold(name.padEnd(15))} ${bar} ${rateStr}  ${chalk.gray(`(${data.count} calls, avg ${data.avgDuration.toFixed(0)}ms)`)}`);
       }
+      console.log('');
     }
 
     // Anomalies
     if (anomalies.length > 0) {
-      console.log('');
-      console.log(chalk.bold.yellow('  ⚠️  Anomalies Detected'));
-      console.log(chalk.gray('  ─────────────────────────────────────────────────────'));
+      console.log(chalk.bold.yellow('  ⚠️  Anomalies'));
+      console.log(DIVIDER);
       for (const a of anomalies) {
         console.log(chalk.yellow(`  ${figures.arrow} ${a.message}`));
       }
+      console.log('');
     }
 
     // Active Periods
     const periods = this.getActivePeriodsFromTimeline(timeline);
     if (periods.length > 0) {
-      console.log('');
       console.log(chalk.bold('  ⏱️  Active Periods'));
-      console.log(chalk.gray('  ─────────────────────────────────────────────────────'));
+      console.log(DIVIDER);
       for (const period of periods.slice(0, 5)) {
-        const start = period.start ? period.start.toLocaleTimeString() : '?';
-        const end = period.end ? period.end.toLocaleTimeString() : '?';
+        const start = period.start ? this.formatTime(period.start) : '?';
+        const end = period.end ? this.formatTime(period.end) : '?';
         const duration = period.start && period.end ? this.formatDuration((period.end - period.start) / 1000) : '?';
-        console.log(`  ${start} → ${end} (${duration}, ${period.count} messages)`);
+        console.log(`  ${chalk.cyan(start)} → ${chalk.cyan(end)}  ${chalk.gray(`(${duration}, ${period.count} messages)`)}`);
       }
-    }
-
-    // Timeline (last 10 messages)
-    if (timeline.length > 0) {
       console.log('');
-      console.log(chalk.bold('  📝 Recent Timeline'));
-      console.log(chalk.gray('  ─────────────────────────────────────────────────────'));
-      for (const entry of timeline.slice(-10)) {
-        const time = entry.timestamp ? entry.timestamp.toLocaleTimeString() : '?';
-        const duration = entry.duration ? chalk.gray(` (${this.formatDuration(entry.duration)})`) : '';
-        const role = entry.role === 'user' ? chalk.cyan('You') : entry.role === 'assistant' ? chalk.green('AI') : chalk.yellow('Tool');
-        const preview = entry.contentPreview.replace(/\n/g, ' ').substring(0, 60);
-        console.log(`  ${time} ${role}${duration}: ${chalk.gray(preview)}`);
-      }
     }
 
-    console.log('');
-    console.log(chalk.gray('  ─────────────────────────────────────────────────────'));
-    console.log(chalk.gray('  Generated by agent-trace | Read-only, local analysis'));
+    // Chat-style Timeline
+    if (timeline.length > 0) {
+      console.log(chalk.bold('  💬 Conversation'));
+      console.log(DIVIDER);
+
+      for (const entry of timeline.slice(-20)) {
+        const time = entry.timestamp ? this.formatTime(entry.timestamp) : '      ?';
+        const duration = entry.duration ? `+${this.formatDurationShort(entry.duration)}` : '';
+        const preview = entry.contentPreview.replace(/\n/g, ' ').substring(0, 50);
+
+        // Role styling
+        let roleIcon, roleColor;
+        if (entry.role === 'user') {
+          roleIcon = '👤';
+          roleColor = chalk.cyan;
+        } else if (entry.role === 'assistant') {
+          roleIcon = '🤖';
+          roleColor = chalk.green;
+        } else {
+          roleIcon = '🔧';
+          roleColor = chalk.yellow;
+        }
+
+        // Build the line: content on left, timestamp on right
+        const content = `${roleIcon} ${roleColor(preview || '(empty)')}`;
+        const timeInfo = duration
+          ? chalk.gray(`${time} ${chalk.dim(`(${duration})`)}`)
+          : chalk.gray(time);
+
+        // Pad content to align time to the right
+        const contentLength = preview.length + 4; // emoji + space
+        const padding = Math.max(2, TERM_WIDTH - 4 - contentLength - time.length);
+        console.log(`  ${content}${' '.repeat(padding)}${timeInfo}`);
+      }
+      console.log('');
+    }
+
+    console.log(DIVIDER);
+    console.log(chalk.dim('  agent-trace | Read-only, local analysis | github.com/liangzhengtao/agent-trace'));
     console.log('');
   }
 
   static section(title, lines) {
     console.log(chalk.bold(`  ${title}`));
-    console.log(chalk.gray('  ─────────────────────────────────────────────────────'));
+    console.log(chalk.gray('  ' + '─'.repeat(76)));
     for (const line of lines) {
       console.log(`  ${line}`);
     }
     console.log('');
   }
 
+  static progressBar(percent, width) {
+    const filled = Math.round((percent / 100) * width);
+    const empty = width - filled;
+    const bar = '█'.repeat(filled) + '░'.repeat(empty);
+    if (percent >= 90) return chalk.green(bar);
+    if (percent >= 70) return chalk.yellow(bar);
+    return chalk.red(bar);
+  }
+
+  static formatTime(date) {
+    if (!date) return '??:??:??';
+    const h = String(date.getHours()).padStart(2, '0');
+    const m = String(date.getMinutes()).padStart(2, '0');
+    const s = String(date.getSeconds()).padStart(2, '0');
+    return `${h}:${m}:${s}`;
+  }
+
   static formatDuration(seconds) {
     if (!seconds || seconds < 0) return '?';
+    if (seconds < 1) return `${(seconds * 1000).toFixed(0)}ms`;
     if (seconds < 60) return `${seconds.toFixed(0)}s`;
     if (seconds < 3600) return `${Math.floor(seconds / 60)}m ${Math.floor(seconds % 60)}s`;
     return `${Math.floor(seconds / 3600)}h ${Math.floor((seconds % 3600) / 60)}m`;
+  }
+
+  static formatDurationShort(seconds) {
+    if (!seconds || seconds < 0) return '?';
+    if (seconds < 1) return `${(seconds * 1000).toFixed(0)}ms`;
+    if (seconds < 60) return `${seconds.toFixed(0)}s`;
+    if (seconds < 3600) return `${Math.floor(seconds / 60)}m${Math.floor(seconds % 60)}s`;
+    return `${Math.floor(seconds / 3600)}h${Math.floor((seconds % 3600) / 60)}m`;
   }
 
   static getActivePeriodsFromTimeline(timeline) {
