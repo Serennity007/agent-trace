@@ -29,12 +29,25 @@ class KimiCodeParser {
           if (fs.existsSync(stateFile)) {
             try {
               const state = JSON.parse(fs.readFileSync(stateFile, 'utf-8'));
-              sessions.push({ path: sessionPath, id: sessionDir, state, workspace });
+              // Check if session has wire.jsonl with actual content
+              const wireFile = path.join(sessionPath, 'agents', 'main', 'wire.jsonl');
+              let hasContent = false;
+              if (fs.existsSync(wireFile)) {
+                const content = fs.readFileSync(wireFile, 'utf-8').trim();
+                hasContent = content.length > 0;
+              }
+              sessions.push({ path: sessionPath, id: sessionDir, state, workspace, hasContent });
             } catch (e) { /* skip */ }
           }
         }
       }
     }
+    // Sort by state.updatedAt descending (most recent first)
+    sessions.sort((a, b) => {
+      const timeA = a.state?.updatedAt ? new Date(a.state.updatedAt).getTime() : 0;
+      const timeB = b.state?.updatedAt ? new Date(b.state.updatedAt).getTime() : 0;
+      return timeB - timeA;
+    });
     return sessions;
   }
 
@@ -50,6 +63,7 @@ class KimiCodeParser {
       cost: 0,
       errors: [],
       retries: 0,
+      workspace: session.workspace,
     };
 
     // Parse state.json for timing
@@ -69,6 +83,9 @@ class KimiCodeParser {
       const content = fs.readFileSync(wireFile, 'utf-8');
       const lines = content.split('\n').filter(Boolean);
 
+      // Track tool calls to match with results
+      let pendingToolCalls = [];
+
       for (const line of lines) {
         try {
           const entry = JSON.parse(line);
@@ -84,7 +101,9 @@ class KimiCodeParser {
             const text = Array.isArray(entry.input)
               ? entry.input.filter(i => i.type === 'text').map(i => i.text).join(' ')
               : String(entry.input);
-            parsed.messages.push({ role: 'user', content: text.substring(0, 200), timestamp });
+            if (text.trim()) {
+              parsed.messages.push({ role: 'user', content: text.substring(0, 200), timestamp });
+            }
           }
 
           // Tool calls: nested in context.append_loop_event
@@ -93,34 +112,60 @@ class KimiCodeParser {
 
             // Tool call
             if (event.type === 'tool.call') {
-              parsed.toolCalls.push({
+              const toolCall = {
                 name: event.name || 'unknown',
                 timestamp,
                 duration: null,
                 success: true,
                 error: null,
-                input: event.description || event.args?.command?.substring(0, 50) || null,
-              });
+                input: event.description || event.args?.command?.substring(0, 80) || null,
+              };
+              parsed.toolCalls.push(toolCall);
+              pendingToolCalls.push(toolCall);
             }
 
             // Tool result (check for errors)
-            if (event.type === 'tool.result' && parsed.toolCalls.length > 0) {
-              const lastTool = parsed.toolCalls[parsed.toolCalls.length - 1];
+            if (event.type === 'tool.result' && pendingToolCalls.length > 0) {
+              const lastTool = pendingToolCalls[pendingToolCalls.length - 1];
               if (event.error || event.isError) {
                 lastTool.success = false;
                 lastTool.error = String(event.error || 'Tool error').substring(0, 100);
               }
+              // Calculate duration if both timestamps exist
+              if (lastTool.timestamp && timestamp) {
+                lastTool.duration = (timestamp - lastTool.timestamp) / 1000;
+              }
+              pendingToolCalls.pop();
             }
 
             // Assistant text output
             if (event.type === 'content.part' && event.part) {
-              if (event.part.type === 'text' && event.part.text) {
+              if (event.part.type === 'text' && event.part.text && event.part.text.trim()) {
                 parsed.messages.push({
                   role: 'assistant',
                   content: event.part.text.substring(0, 200),
                   timestamp,
                 });
               }
+            }
+
+            // Also check for direct content text
+            if (event.type === 'text' && event.text && event.text.trim()) {
+              parsed.messages.push({
+                role: 'assistant',
+                content: event.text.substring(0, 200),
+                timestamp,
+              });
+            }
+          }
+
+          // Direct assistant response
+          if (entry.type === 'turn.response' && entry.output) {
+            const text = Array.isArray(entry.output)
+              ? entry.output.filter(i => i.type === 'text').map(i => i.text).join(' ')
+              : String(entry.output);
+            if (text.trim()) {
+              parsed.messages.push({ role: 'assistant', content: text.substring(0, 200), timestamp });
             }
           }
 
@@ -131,12 +176,23 @@ class KimiCodeParser {
             parsed.totalTokens.output += entry.usage.output || 0;
           }
 
+          // Token usage from turn.usage
+          if (entry.type === 'turn.usage' && entry.usage) {
+            parsed.totalTokens.input += entry.usage.input_tokens || 0;
+            parsed.totalTokens.output += entry.usage.output_tokens || 0;
+          }
+
           // Errors
           if (entry.type === 'tool.result' && entry.event?.error) {
             parsed.errors.push({
               message: String(entry.event.error).substring(0, 100),
               timestamp,
             });
+          }
+
+          // Retry detection
+          if (entry.type === 'retry' || entry.type === 'model.retry') {
+            parsed.retries++;
           }
         } catch (e) { /* skip malformed */ }
       }

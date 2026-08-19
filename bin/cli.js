@@ -35,6 +35,8 @@ program
   .option('-v, --verbose', 'Show detailed timeline')
   .option('-a, --agent <type>', 'Agent type (opencode, claude-code, kimi-code, codex)', 'auto')
   .option('--list-agents', 'List supported agents')
+  .option('-n, --top <count>', 'Show top N sessions by cost', '5')
+  .option('--all', 'Show all sessions (including empty)')
   .addHelpText('after', `
 ${chalk.bold('Examples:')}
   $ ${chalk.cyan('agent-trace')}                        # Auto-detect agent
@@ -44,6 +46,7 @@ ${chalk.bold('Examples:')}
   $ ${chalk.cyan('agent-trace -a codex')}                # Analyze Codex sessions
   $ ${chalk.cyan('agent-trace --json')}                  # Output as JSON
   $ ${chalk.cyan('agent-trace -s session-id')}           # Analyze specific session
+  $ ${chalk.cyan('agent-trace -n 10')}                   # Show top 10 sessions
 
 ${chalk.bold('Supported Agents:')}
   ${chalk.green('opencode')}      - OpenCode ✅
@@ -113,7 +116,19 @@ async function main() {
     process.exit(0);
   }
 
-  console.log(chalk.green(`  ✓ Found ${allSessions.length} session(s) from ${new Set(allSessions.map(s => s.agentName)).size} agent(s)`));
+  // Filter out empty sessions unless --all is specified
+  const totalFound = allSessions.length;
+  if (!opts.all) {
+    allSessions = allSessions.filter(s => s.hasContent !== false);
+  }
+
+  if (allSessions.length === 0) {
+    console.log(chalk.yellow(`  No sessions with content found (${totalFound} empty sessions filtered).`));
+    console.log(chalk.gray('  Use --all to show all sessions.'));
+    process.exit(0);
+  }
+
+  console.log(chalk.green(`  ✓ Found ${allSessions.length} session(s) with content (${totalFound} total)`));
   console.log('');
 
   // Filter by session ID if specified
@@ -125,39 +140,149 @@ async function main() {
     }
   }
 
-  // Analyze each session
+  // Parse all sessions first
+  const parsedSessions = [];
   for (const session of allSessions) {
     try {
       let parsed;
-      // Pass session data to parser
       if (session.data) {
         parsed = session.parser.parseSession(session.data);
       } else {
         parsed = session.parser.parseSession(session);
       }
-
-      const stats = SessionAnalyzer.getStats(parsed);
-      const costBreakdown = SessionAnalyzer.getCostBreakdown(parsed);
-      const toolUsage = SessionAnalyzer.getToolUsage(parsed.toolCalls);
-      const anomalies = SessionAnalyzer.detectAnomalies(parsed);
-      const timeline = session.parser.getTimeline ? session.parser.getTimeline(parsed.messages) : [];
-
-      if (opts.json) {
-        console.log(JSON.stringify({
-          agent: session.agentName,
-          session: parsed.id,
-          stats,
-          costBreakdown,
-          toolUsage,
-          anomalies,
-          timeline: opts.verbose ? timeline : undefined,
-        }, null, 2));
-      } else {
-        console.log(chalk.bold(`  Agent: ${session.agentName}`));
-        Reporter.display(parsed, stats, costBreakdown, toolUsage, anomalies, timeline);
-      }
+      parsed.agentName = session.agentName;
+      parsedSessions.push(parsed);
     } catch (err) {
       console.log(chalk.yellow(`  ⚠️  Error parsing session ${session.id}: ${err.message}`));
+    }
+  }
+
+  // Sort by cost descending
+  parsedSessions.sort((a, b) => b.cost - a.cost);
+
+  // Summary view for multiple sessions
+  if (parsedSessions.length > 1 && !opts.session) {
+    const TERM_WIDTH = 80;
+    const DIVIDER = chalk.gray('  ' + '─'.repeat(TERM_WIDTH - 4));
+
+    console.log(chalk.bold.cyan('  📊 Summary'));
+    console.log(DIVIDER);
+
+    // Calculate totals
+    let totalCost = 0;
+    let totalTokens = { input: 0, output: 0 };
+    let totalMessages = 0;
+    let totalToolCalls = 0;
+    let totalDuration = 0;
+
+    for (const parsed of parsedSessions) {
+      totalCost += parsed.cost;
+      totalTokens.input += parsed.totalTokens.input;
+      totalTokens.output += parsed.totalTokens.output;
+      totalMessages += parsed.messages.length;
+      totalToolCalls += parsed.toolCalls.length;
+      totalDuration += parsed.duration;
+    }
+
+    console.log(`  Sessions:      ${chalk.bold(parsedSessions.length)}`);
+    console.log(`  Total Cost:    ${chalk.bold.green(`$${totalCost.toFixed(4)}`)}`);
+    console.log(`  Total Tokens:  ${chalk.bold((totalTokens.input + totalTokens.output).toLocaleString())}`);
+    console.log(`  Total Messages: ${chalk.bold(totalMessages)}`);
+    console.log(`  Total Tools:   ${chalk.bold(totalToolCalls)}`);
+    console.log(`  Total Time:    ${chalk.bold(Reporter.formatDuration(totalDuration))}`);
+    console.log('');
+
+    // Top sessions table
+    const topN = parseInt(opts.top) || 5;
+    const topSessions = parsedSessions.slice(0, topN);
+
+    console.log(chalk.bold(`  💰 Top ${topN} Most Expensive Sessions`));
+    console.log(DIVIDER);
+    console.log(chalk.gray('  Rank  Session ID                         Cost      Tokens    Messages'));
+    console.log(chalk.gray('  ────  ─────────────────────────────────  ────────  ────────  ────────'));
+
+    for (let i = 0; i < topSessions.length; i++) {
+      const p = topSessions[i];
+      const rank = String(i + 1).padStart(4);
+      const id = p.id.substring(0, 36).padEnd(36);
+      const cost = `$${p.cost.toFixed(4)}`.padStart(8);
+      const tokens = (p.totalTokens.input + p.totalTokens.output).toLocaleString().padStart(8);
+      const msgs = String(p.messages.length).padStart(8);
+      console.log(`  ${rank}  ${chalk.cyan(id)}  ${chalk.green(cost)}  ${tokens}  ${msgs}`);
+    }
+    console.log('');
+
+    // Show detailed view for top session
+    if (topSessions.length > 0) {
+      const top = topSessions[0];
+      console.log(chalk.bold(`  🔎 Most Expensive Session Detail`));
+      console.log(DIVIDER);
+      const stats = SessionAnalyzer.getStats(top);
+      const costBreakdown = SessionAnalyzer.getCostBreakdown(top);
+      const toolUsage = SessionAnalyzer.getToolUsage(top.toolCalls);
+      const anomalies = SessionAnalyzer.detectAnomalies(top);
+      const timeline = top.agentName === 'kimi-code'
+        ? new KimiCodeParser().getTimeline(top.messages)
+        : [];
+      Reporter.display(top, stats, costBreakdown, toolUsage, anomalies, timeline);
+    }
+
+    // Show latest session
+    const latestSession = parsedSessions.reduce((latest, p) => {
+      if (!latest || !latest.endTime) return p;
+      if (!p.endTime) return latest;
+      return p.endTime > latest.endTime ? p : latest;
+    }, null);
+
+    if (latestSession && latestSession.id !== topSessions[0]?.id) {
+      console.log(chalk.bold(`  🕐 Latest Session`));
+      console.log(DIVIDER);
+      const stats = SessionAnalyzer.getStats(latestSession);
+      const costBreakdown = SessionAnalyzer.getCostBreakdown(latestSession);
+      const toolUsage = SessionAnalyzer.getToolUsage(latestSession.toolCalls);
+      const anomalies = SessionAnalyzer.detectAnomalies(latestSession);
+      const timeline = latestSession.agentName === 'kimi-code'
+        ? new KimiCodeParser().getTimeline(latestSession.messages)
+        : [];
+      Reporter.display(latestSession, stats, costBreakdown, toolUsage, anomalies, timeline);
+    }
+
+    console.log(DIVIDER);
+    console.log(chalk.dim('  agent-trace | Read-only, local analysis | github.com/liangzhengtao/agent-trace'));
+    console.log('');
+  } else {
+    // Single session or specific session requested
+    for (const parsed of parsedSessions) {
+      try {
+        if (opts.json) {
+          const stats = SessionAnalyzer.getStats(parsed);
+          const costBreakdown = SessionAnalyzer.getCostBreakdown(parsed);
+          const toolUsage = SessionAnalyzer.getToolUsage(parsed.toolCalls);
+          const anomalies = SessionAnalyzer.detectAnomalies(parsed);
+          const timeline = [];
+          console.log(JSON.stringify({
+            agent: parsed.agentName,
+            session: parsed.id,
+            stats,
+            costBreakdown,
+            toolUsage,
+            anomalies,
+            timeline: opts.verbose ? timeline : undefined,
+          }, null, 2));
+        } else {
+          console.log(chalk.bold(`  Agent: ${parsed.agentName}`));
+          const stats = SessionAnalyzer.getStats(parsed);
+          const costBreakdown = SessionAnalyzer.getCostBreakdown(parsed);
+          const toolUsage = SessionAnalyzer.getToolUsage(parsed.toolCalls);
+          const anomalies = SessionAnalyzer.detectAnomalies(parsed);
+          const timeline = parsed.agentName === 'kimi-code'
+            ? new KimiCodeParser().getTimeline(parsed.messages)
+            : [];
+          Reporter.display(parsed, stats, costBreakdown, toolUsage, anomalies, timeline);
+        }
+      } catch (err) {
+        console.log(chalk.yellow(`  ⚠️  Error displaying session ${parsed.id}: ${err.message}`));
+      }
     }
   }
 }

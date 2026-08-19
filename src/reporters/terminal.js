@@ -50,7 +50,7 @@ class Reporter {
         const icon = rate >= 90 ? chalk.green('✓') : rate >= 70 ? chalk.yellow('⚠') : chalk.red('✗');
         const rateStr = rate >= 90 ? chalk.green(`${rate.toFixed(0)}%`) : rate >= 70 ? chalk.yellow(`${rate.toFixed(0)}%`) : chalk.red(`${rate.toFixed(0)}%`);
         const bar = this.progressBar(rate, 20);
-        console.log(`  ${icon} ${chalk.bold(name.padEnd(15))} ${bar} ${rateStr}  ${chalk.gray(`(${data.count} calls, avg ${data.avgDuration.toFixed(0)}ms)`)}`);
+        console.log(`  ${icon} ${chalk.bold(name.padEnd(15))} ${bar} ${rateStr}  ${chalk.gray(`(${data.count} calls, avg ${this.formatDurationShort(data.avgDuration / 1000)})`)}`);
       }
       console.log('');
     }
@@ -79,43 +79,64 @@ class Reporter {
       console.log('');
     }
 
-    // Chat-style Timeline
+    // Chat-style Timeline with timestamps on right
     if (timeline.length > 0) {
       console.log(chalk.bold('  💬 Conversation'));
       console.log(DIVIDER);
 
-      for (const entry of timeline.slice(-20)) {
-        const time = entry.timestamp ? this.formatTime(entry.timestamp) : '      ?';
-        const duration = entry.duration ? `+${this.formatDurationShort(entry.duration)}` : '';
+      for (const entry of timeline.slice(-25)) {
+        const time = entry.timestamp ? this.formatTime(entry.timestamp) : '??:??:??';
+        const duration = entry.duration !== null && entry.duration !== undefined
+          ? `+${this.formatDurationShort(entry.duration)}`
+          : '';
         const preview = entry.contentPreview
           .replace(/\x1b\[[0-9;]*m/g, '') // Remove ANSI escape sequences
           .replace(/[\t\r]/g, ' ')          // Replace tabs/CR with space
           .replace(/\n/g, ' ')              // Replace newlines
-          .substring(0, 50);
+          .substring(0, 55)
+          .trim();
 
         // Role styling
         let roleIcon, roleColor;
         if (entry.role === 'user') {
-          roleIcon = '👤';
-          roleColor = chalk.cyan;
+          roleIcon = chalk.cyan('YOU');
+          roleColor = chalk.white;
         } else if (entry.role === 'assistant') {
-          roleIcon = '🤖';
-          roleColor = chalk.green;
+          roleIcon = chalk.green('AI ');
+          roleColor = chalk.white;
         } else {
-          roleIcon = '🔧';
-          roleColor = chalk.yellow;
+          roleIcon = chalk.yellow('TL ');
+          roleColor = chalk.gray;
         }
 
-        // Build the line: content on left, timestamp on right
-        const content = `${roleIcon} ${roleColor(preview || '(empty)')}`;
-        const timeInfo = duration
-          ? chalk.gray(`${time} ${chalk.dim(`(${duration})`)}`)
+        // Build the line: [ROLE] content ... timestamp (duration)
+        const contentText = preview || '(empty)';
+        const roleTag = `[${roleIcon}]`;
+
+        // Calculate right-side info
+        const rightInfo = duration
+          ? chalk.gray(`${time} (${chalk.yellow(duration)})`)
           : chalk.gray(time);
 
-        // Pad content to align time to the right
-        const contentLength = preview.length + 4; // emoji + space
-        const padding = Math.max(2, TERM_WIDTH - 4 - contentLength - time.length);
-        console.log(`  ${content}${' '.repeat(padding)}${timeInfo}`);
+        // Calculate padding to right-align the time info
+        const leftPart = `  ${roleTag} ${contentText}`;
+        // Approximate visible length (strip chalk for length calc)
+        const visibleLen = contentText.length + 6; // "[XX ] " + content
+        const rightLen = duration ? time.length + duration.length + 4 : time.length;
+        const padding = Math.max(2, TERM_WIDTH - 4 - visibleLen - rightLen);
+
+        // Truncate content if too long
+        if (visibleLen + rightLen + 2 > TERM_WIDTH - 4) {
+          const maxContent = TERM_WIDTH - 4 - rightLen - 10;
+          const truncated = contentText.substring(0, maxContent) + '...';
+          console.log(`  ${roleTag} ${roleColor(truncated)}  ${rightInfo}`);
+        } else {
+          console.log(`  ${roleTag} ${roleColor(contentText)}${' '.repeat(padding)}${rightInfo}`);
+        }
+      }
+
+      if (timeline.length > 25) {
+        console.log(chalk.gray(`  ... and ${timeline.length - 25} more messages`));
       }
       console.log('');
     }

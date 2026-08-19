@@ -43,14 +43,46 @@ That's it. One command. No API keys. No cloud services. Everything runs locally.
 # Install
 npm install -g agent-trace
 
-# Analyze your OpenCode sessions
+# Auto-detect and analyze all sessions
 agent-trace
 
-# Or use npx
-npx agent-trace
+# Analyze Kimi Code sessions
+agent-trace -a kimi-code
+
+# Analyze Claude Code sessions
+agent-trace -a claude-code
+
+# Show top 10 most expensive sessions
+agent-trace -n 10
+
+# Output as JSON
+agent-trace --json
 ```
 
 ## What It Shows
+
+### Summary View (Multiple Sessions)
+
+```
+  📊 Summary
+  ─────────────────────────────────────────────────────
+  Sessions:      64
+  Total Cost:    $4681.95
+  Total Tokens:  2,323,222,286
+  Total Messages: 3256
+  Total Tools:   11570
+  Total Time:    1593h 49m
+
+  💰 Top 5 Most Expensive Sessions
+  ─────────────────────────────────────────────────────
+  Rank  Session ID                         Cost      Tokens    Messages
+  ────  ─────────────────────────────────  ────────  ────────  ────────
+     1  session_37ce506c-ecbd-4ac9-8151   $1517.15  757,285,306      1177
+     2  session_bd1b6c0e-a4cc-402c-8c1e   $1210.12  596,458,795       508
+     3  session_daecc013-3b5b-44a8-9c19   $1080.48  538,333,781       489
+```
+
+### Session Detail
 
 ```
   🔍 Agent Trace Report
@@ -59,26 +91,26 @@ npx agent-trace
   📊 Session Overview
   ─────────────────────────────────────────────────────
   Duration: 45m 23s
-  Messages: 127 (User: 32, Assistant: 64, Tool: 31)
+  Messages: 127 (User: 32, AI: 64, Tool: 31)
   Tool Calls: 89 (12 unique tools)
   Errors: 3
   Retries: 2
 
   💰 Cost Analysis
   ─────────────────────────────────────────────────────
-  Input Tokens: 245,891 ($0.0738)
-  Output Tokens: 89,234 ($0.1339)
-  Total Tokens: 335,125
+  Input Tokens:  245,891  ($0.0738)
+  Output Tokens: 89,234  ($0.1339)
+  Total Tokens:  335,125
   Estimated Cost: $0.2076
 
   🔧 Tool Health
   ─────────────────────────────────────────────────────
-  ✓ Read: 45 calls, 100% success, avg 120ms
-  ✓ Write: 23 calls, 96% success, avg 85ms
-  ⚠ Bash: 12 calls, 75% success, avg 2340ms
-  ✗ Browser: 9 calls, 44% success, avg 5120ms
+  ✓ Read            ████████████████████ 100%  (45 calls, avg 120ms)
+  ✓ Write           ████████████████████ 100%  (23 calls, avg 85ms)
+  ⚠ Bash            ███████████████░░░░░  75%  (12 calls, avg 2s)
+  ✗ Browser         ████████░░░░░░░░░░░░  44%  (9 calls, avg 5s)
 
-  ⚠️  Anomalies Detected
+  ⚠️  Anomalies
   ─────────────────────────────────────────────────────
   → High tool failure rate: 18/89
   → High estimated cost: $5.23
@@ -88,12 +120,12 @@ npx agent-trace
   09:15:23 → 09:47:56 (32m 33s, 45 messages)
   10:02:11 → 10:31:44 (29m 33s, 52 messages)
 
-  📝 Recent Timeline
+  💬 Conversation
   ─────────────────────────────────────────────────────
-  10:31:12 You: Fix the authentication bug...
-  10:31:14 AI (2s): I'll check the auth middleware...
-  10:31:15 Tool (1s): Read src/middleware/auth.ts
-  10:31:44 AI (29s): Fixed. The issue was...
+  [YOU] Fix the authentication bug...                    10:31:12
+  [AI ] I'll check the auth middleware...                10:31:14 (+2s)
+  [YOU] What about the token validation?                 10:31:30 (+16s)
+  [AI ] Fixed. The issue was...                          10:31:44 (+14s)
 ```
 
 ---
@@ -107,7 +139,10 @@ Options:
   -s, --session <id>   Analyze specific session
   -j, --json           Output as JSON
   -v, --verbose        Show detailed timeline
-  --agent <type>       Agent type (opencode, kimi-code, claude-code, codex)
+  -a, --agent <type>   Agent type (opencode, kimi-code, claude-code, codex)
+  -n, --top <count>    Show top N sessions by cost (default: 5)
+  --all                Show all sessions (including empty)
+  --list-agents        List supported agents
   -h, --help           Display help
   -V, --version        Display version
 ```
