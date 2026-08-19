@@ -22,16 +22,37 @@ class ClaudeCodeParser {
       for (const project of projects) {
         const projectPath = path.join(basePath, project);
         if (!fs.statSync(projectPath).isDirectory()) continue;
+        // Skip memory directories
+        if (project === 'memory') continue;
         const files = fs.readdirSync(projectPath).filter(f => f.endsWith('.jsonl'));
         for (const file of files) {
-          sessions.push({
-            file: path.join(projectPath, file),
-            id: file.replace('.jsonl', ''),
-            project,
-          });
+          const filePath = path.join(projectPath, file);
+          // Check if file has content
+          try {
+            const content = fs.readFileSync(filePath, 'utf-8').trim();
+            const hasContent = content.length > 0 && content.split('\n').length > 2;
+            sessions.push({
+              file: filePath,
+              id: file.replace('.jsonl', ''),
+              project,
+              hasContent,
+            });
+          } catch (e) {
+            // Skip
+          }
         }
       }
     }
+    // Sort by file modification time descending
+    sessions.sort((a, b) => {
+      try {
+        const statA = fs.statSync(a.file);
+        const statB = fs.statSync(b.file);
+        return statB.mtimeMs - statA.mtimeMs;
+      } catch (e) {
+        return 0;
+      }
+    });
     return sessions;
   }
 
@@ -68,23 +89,28 @@ class ClaudeCodeParser {
           // Process user messages
           if (entry.type === 'user' && entry.message) {
             const msg = entry.message;
-            const content = typeof msg.content === 'string'
-              ? msg.content
-              : Array.isArray(msg.content)
-                ? msg.content.filter(c => c.type === 'text').map(c => c.text).join(' ')
-                : '';
-            parsed.messages.push({
-              role: 'user',
-              content: content.substring(0, 200),
-              timestamp,
-            });
+            let textContent = '';
+            if (typeof msg.content === 'string') {
+              textContent = msg.content;
+            } else if (Array.isArray(msg.content)) {
+              textContent = msg.content
+                .filter(c => c.type === 'text')
+                .map(c => c.text)
+                .join(' ');
+            }
+            if (textContent.trim()) {
+              parsed.messages.push({
+                role: 'user',
+                content: textContent.substring(0, 200),
+                timestamp,
+              });
+            }
           }
 
-          // Process assistant messages (may contain tool_use blocks)
+          // Process assistant messages
           if (entry.type === 'assistant' && entry.message) {
             const msg = entry.message;
             let textContent = '';
-            let hasToolUse = false;
 
             if (typeof msg.content === 'string') {
               textContent = msg.content;
@@ -93,14 +119,13 @@ class ClaudeCodeParser {
                 if (block.type === 'text') {
                   textContent += block.text;
                 } else if (block.type === 'tool_use') {
-                  hasToolUse = true;
                   parsed.toolCalls.push({
                     name: block.name || 'unknown',
                     timestamp,
                     duration: null,
-                    success: true, // Will be updated if we see tool_result with error
+                    success: true,
                     error: null,
-                    input: block.input ? JSON.stringify(block.input).substring(0, 100) : null,
+                    input: block.input ? JSON.stringify(block.input).substring(0, 80) : null,
                   });
                 }
               }
@@ -112,19 +137,19 @@ class ClaudeCodeParser {
               parsed.totalTokens.output += msg.usage.output_tokens || 0;
             }
 
-            parsed.messages.push({
-              role: 'assistant',
-              content: textContent.substring(0, 200),
-              timestamp,
-              hasToolUse,
-            });
+            if (textContent.trim()) {
+              parsed.messages.push({
+                role: 'assistant',
+                content: textContent.substring(0, 200),
+                timestamp,
+              });
+            }
           }
 
           // Process tool results (errors)
           if (entry.type === 'tool_result' && entry.message) {
             const isError = entry.message.is_error || false;
             if (isError && parsed.toolCalls.length > 0) {
-              // Mark the last tool call as failed
               const lastTool = parsed.toolCalls[parsed.toolCalls.length - 1];
               lastTool.success = false;
               lastTool.error = typeof entry.message.content === 'string'
@@ -153,7 +178,7 @@ class ClaudeCodeParser {
       parsed.duration = (parsed.endTime - parsed.startTime) / 1000;
     }
 
-    // Estimate cost (Claude 3.5 Sonnet pricing)
+    // Estimate cost (Claude pricing)
     parsed.cost = (parsed.totalTokens.input * 3 + parsed.totalTokens.output * 15) / 1000000;
 
     return parsed;

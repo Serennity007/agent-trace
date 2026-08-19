@@ -4,6 +4,7 @@ const path = require('path');
 /**
  * Parse OpenCode session logs
  * OpenCode stores sessions in ~/.opencode/sessions/ as JSON files
+ * Or in ~/.opencode/ as opencode.json
  */
 class OpenCodeParser {
   constructor() {
@@ -21,21 +22,35 @@ class OpenCodeParser {
     const sessions = [];
     for (const basePath of this.sessionPaths) {
       if (!fs.existsSync(basePath)) continue;
-      const files = fs.readdirSync(basePath).filter(f => f.endsWith('.json'));
+      // Check for JSON files
+      const files = fs.readdirSync(basePath).filter(f => f.endsWith('.json') && f !== 'package.json' && f !== 'package-lock.json');
       for (const file of files) {
         const filePath = path.join(basePath, file);
         try {
           const content = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+          const hasContent = (content.messages && content.messages.length > 0) ||
+                            (content.turns && content.turns.length > 0);
           sessions.push({
             file: filePath,
             id: content.id || file.replace('.json', ''),
             data: content,
+            hasContent,
           });
         } catch (e) {
           // Skip malformed files
         }
       }
     }
+    // Sort by modification time descending
+    sessions.sort((a, b) => {
+      try {
+        const statA = fs.statSync(a.file);
+        const statB = fs.statSync(b.file);
+        return statB.mtimeMs - statA.mtimeMs;
+      } catch (e) {
+        return 0;
+      }
+    });
     return sessions;
   }
 
@@ -98,7 +113,7 @@ class OpenCodeParser {
       }
 
       // Track retries
-      if (msg.retry || content.toLowerCase().includes('retry')) {
+      if (msg.retry || (typeof content === 'string' && content.toLowerCase().includes('retry'))) {
         parsed.retries++;
       }
 

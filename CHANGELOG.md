@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.0.2] - 2026-08-19
+
+### Fixed
+- Codex parser: token_count events are cumulative, now takes last value instead of summing
+- Codex parser: correctly parses event_msg user_message/agent_message and response_item
+- Claude Code parser: added hasContent filtering and sort by modification time
+- OpenCode parser: added hasContent filtering and sort by modification time
+
 ## [1.0.1] - 2026-08-19
 
 ### Added
