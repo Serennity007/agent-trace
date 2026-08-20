@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="640" viewBox="0 0 1280 640">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0d1117;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#1a0533;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#00d4ff;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="text" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#00d4ff" />
+      <stop offset="100%" style="stop-color:#6e40c9" />
+    </linearGradient>
+  </defs>
+  <rect width="1280" height="640" fill="url(#bg)"/>
+  
+  <!-- Grid pattern -->
+  <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+    <path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgba(0,212,255,0.1)" stroke-width="1"/>
+  </pattern>
+  <rect width="1280" height="640" fill="url(#grid)"/>
+  
+  <!-- Logo/Icon area -->
+  <circle cx="200" cy="320" r="80" fill="none" stroke="url(#text)" stroke-width="3" opacity="0.5"/>
+  <text x="200" y="340" font-family="monospace" font-size="60" fill="url(#text)" text-anchor="middle">🔍</text>
+  
+  <!-- Title -->
+  <text x="350" y="250" font-family="JetBrains Mono, monospace" font-size="72" font-weight="bold" fill="white">
+    Agent Trace
+  </text>
+  
+  <!-- Subtitle -->
+  <text x="350" y="320" font-family="JetBrains Mono, monospace" font-size="32" fill="#8b949e">
+    Track your AI agent costs, tokens, tool health
+  </text>
+  
+  <!-- npx command -->
+  <rect x="350" y="370" rx="10" ry="10" width="500" height="60" fill="rgba(0,0,0,0.5)"/>
+  <text x="370" y="410" font-family="monospace" font-size="28" fill="#00d4ff">
+    $ npx agent-trace
+  </text>
+  
+  <!-- Badges -->
+  <rect x="350" y="470" rx="5" ry="5" width="120" height="30" fill="#cb3837"/>
+  <text x="410" y="490" font-family="sans-serif" font-size="16" fill="white" text-anchor="middle">npm</text>
+  
+  <rect x="490" y="470" rx="5" ry="5" width="120" height="30" fill="#6e40c9"/>
+  <text x="550" y="490" font-family="sans-serif" font-size="16" fill="white" text-anchor="middle">MIT License</text>
+  
+  <!-- Footer -->
+  <text x="640" y="600" font-family="sans-serif" font-size="18" fill="rgba(255,255,255,0.5)" text-anchor="middle">
+    github.com/liangzhengtao/agent-trace
+  </text>
+</svg>
