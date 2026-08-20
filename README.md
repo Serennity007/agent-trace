@@ -11,8 +11,14 @@
 **What is your AI agent actually doing? Track costs, tokens, tool health, and every conversation.**
 
 [![npm](https://img.shields.io/npm/v/agent-trace.svg)](https://www.npmjs.com/package/agent-trace)
+[![npm](https://img.shields.io/npm/dt/agent-trace.svg)](https://www.npmjs.com/package/agent-trace)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![GitHub Stars](https://img.shields.io/github/stars/liangzhengtao/agent-trace.svg)](https://github.com/liangzhengtao/agent-trace)
 
+</div>
+
+<div align="center">
+<img src=".demo.svg" width="100%" alt="demo">
 </div>
 
 ---
@@ -21,11 +27,11 @@
 
 Your AI coding agent runs for hours. It calls tools, burns tokens, retries failed operations. But you have no idea:
 
-- How much it actually cost
-- Which tools keep failing
-- Why it retried 15 times
-- Whether the model was slow or the tools were broken
-- How long each conversation took
+- 💸 How much it actually cost
+- 🔧 Which tools keep failing
+- 🔄 Why it retried 15 times
+- 🐌 Whether the model was slow or the tools were broken
+- ⏱️ How long each conversation took
 
 ## The Solution
 
@@ -33,7 +39,7 @@ Your AI coding agent runs for hours. It calls tools, burns tokens, retries faile
 npx agent-trace
 ```
 
-That's it. One command. No API keys. No cloud services. Everything runs locally.
+**One command. No API keys. No cloud services. Everything runs locally.**
 
 ---
 
