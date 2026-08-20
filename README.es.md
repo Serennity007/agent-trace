@@ -10,7 +10,7 @@
 
 <div align="center">
 
-**What is your AI agent actually doing? Track costs, tokens, tool health, and every conversation.**
+**¿Qué está haciendo realmente tu agente de IA? Rastrea costos, tokens, salud de herramientas y cada conversación.**
 
 [![npm](https://img.shields.io/npm/v/agent-trace.svg)](https://www.npmjs.com/package/agent-trace)
 [![npm](https://img.shields.io/npm/dt/agent-trace.svg)](https://www.npmjs.com/package/agent-trace)
@@ -25,51 +25,51 @@
 
 ---
 
-## The Problem
+## El problema
 
-Your AI coding agent runs for hours. It calls tools, burns tokens, retries failed operations. But you have no idea:
+Tu agente de codificación con IA funciona durante horas. Llama herramientas, consume tokens, reintenta operaciones fallidas. Pero no tienes idea:
 
-- 💸 How much it actually cost
-- 🔧 Which tools keep failing
-- 🔄 Why it retried 15 times
-- 🐌 Whether the model was slow or the tools were broken
-- ⏱️ How long each conversation took
+- 💸 Cuánto costó realmente
+- 🔧 Qué herramientas siguen fallando
+- 🔄 Por qué reintentó 15 veces
+- 🐌 Si el modelo estaba lento o las herramientas estaban rotas
+- ⏱️ Cuánto tardó cada conversación
 
-## The Solution
+## La solución
 
 ```bash
 npx agent-trace
 ```
 
-**One command. No API keys. No cloud services. Everything runs locally.**
+**Un solo comando. Sin claves API. Sin servicios en la nube. Todo se ejecuta localmente.**
 
 ---
 
-## Quick Start
+## Inicio rápido
 
 ```bash
-# Install
+# Instalar
 npm install -g agent-trace
 
-# Auto-detect and analyze all sessions
+# Detectar automáticamente y analizar todas las sesiones
 agent-trace
 
-# Analyze Kimi Code sessions
+# Analizar sesiones de Kimi Code
 agent-trace -a kimi-code
 
-# Analyze Claude Code sessions
+# Analizar sesiones de Claude Code
 agent-trace -a claude-code
 
-# Show top 10 most expensive sessions
+# Mostrar las 10 sesiones más costosas
 agent-trace -n 10
 
-# Output as JSON
+# Salida en formato JSON
 agent-trace --json
 ```
 
-## What It Shows
+## Lo que muestra
 
-### Summary View (Multiple Sessions)
+### Vista resumen (múltiples sesiones)
 
 ```
   📊 Summary
@@ -90,7 +90,7 @@ agent-trace --json
      3  session_daecc013-3b5b-44a8-9c19   $1080.48  538,333,781       489
 ```
 
-### Session Detail
+### Detalle de sesión
 
 ```
   🔍 Agent Trace Report
@@ -138,92 +138,92 @@ agent-trace --json
 
 ---
 
-## Options
+## Opciones
 
 ```
 agent-trace [options] [directory]
 
 Options:
-  -s, --session <id>   Analyze specific session
-  -j, --json           Output as JSON
-  -v, --verbose        Show detailed timeline
-  -a, --agent <type>   Agent type (opencode, kimi-code, claude-code, codex)
-  -n, --top <count>    Show top N sessions by cost (default: 5)
-  --all                Show all sessions (including empty)
-  --list-agents        List supported agents
-  -h, --help           Display help
-  -V, --version        Display version
+  -s, --session <id>   Analizar sesión específica
+  -j, --json           Salida en formato JSON
+  -v, --verbose        Mostrar línea de tiempo detallada
+  -a, --agent <type>   Tipo de agente (opencode, kimi-code, claude-code, codex)
+  -n, --top <count>    Mostrar las N sesiones más costosas (por defecto: 5)
+  --all                Mostrar todas las sesiones (incluidas las vacías)
+  --list-agents        Listar agentes compatibles
+  -h, --help           Mostrar ayuda
+  -V, --version        Mostrar versión
 ```
 
-## Supported Agents
+## Agentes compatibles
 
-| Agent | Status | Config Path |
-|-------|--------|-------------|
-| **OpenCode** | ✅ Supported | `~/.opencode/sessions/` |
-| **Claude Code** | ✅ Supported | `~/.claude/projects/` |
-| **Kimi Code** | ✅ Supported | `~/.kimi-code/sessions/` |
-| **Codex** | ✅ Supported | `~/.codex/sessions/` |
-| **Cursor** | 🔜 Coming soon | — |
-| **Windsurf** | 🔜 Coming soon | — |
-| **Cline** | 🔜 Coming soon | — |
-| **Continue** | 🔜 Coming soon | — |
+| Agente | Estado | Ruta de configuración |
+|--------|--------|-----------------------|
+| **OpenCode** | ✅ Compatible | `~/.opencode/sessions/` |
+| **Claude Code** | ✅ Compatible | `~/.claude/projects/` |
+| **Kimi Code** | ✅ Compatible | `~/.kimi-code/sessions/` |
+| **Codex** | ✅ Compatible | `~/.codex/sessions/` |
+| **Cursor** | 🔜 Próximamente | — |
+| **Windsurf** | 🔜 Próximamente | — |
+| **Cline** | 🔜 Próximamente | — |
+| **Continue** | 🔜 Próximamente | — |
 
-### Auto-Detection
+### Detección automática
 
-By default, agent-trace scans all known paths and auto-detects which agent you're using:
+Por defecto, agent-trace escanea todas las rutas conocidas y detecta automáticamente qué agente estás usando:
 
 ```bash
-agent-trace  # Auto-detect and analyze all sessions
+agent-trace  # Detección automática y análisis de todas las sesiones
 ```
 
-### Force Specific Agent
+### Forzar un agente específico
 
 ```bash
-agent-trace -a claude-code   # Only analyze Claude Code
-agent-trace -a kimi-code     # Only analyze Kimi Code
-agent-trace -a opencode      # Only analyze OpenCode
-agent-trace -a codex         # Only analyze Codex
+agent-trace -a claude-code   # Solo analizar Claude Code
+agent-trace -a kimi-code     # Solo analizar Kimi Code
+agent-trace -a opencode      # Solo analizar OpenCode
+agent-trace -a codex         # Solo analizar Codex
 ```
 
-## CI Integration
+## Integración CI
 
 ```yaml
-# GitHub Actions - check agent costs
+# GitHub Actions - verificar costos del agente
 - name: Check agent costs
   run: |
     npx agent-trace --json > trace.json
     COST=$(jq '.costBreakdown.total.cost' trace.json)
     if (( $(echo "$COST > 10" | bc -l) )); then
-      echo "Agent cost too high: $COST"
+      echo "Costo del agente demasiado alto: $COST"
       exit 1
     fi
 ```
 
 ---
 
-## How It Works
+## Cómo funciona
 
-1. **Reads local session files** — No network requests, no API calls
-2. **Parses message history** — Extracts roles, tokens, timestamps
-3. **Analyzes tool calls** — Tracks success/failure rates
-4. **Calculates costs** — Based on standard API pricing
-5. **Detects anomalies** — High retries, failures, costs
-6. **Generates report** — Terminal output or JSON
+1. **Lee archivos de sesión locales** — Sin peticiones de red, sin llamadas API
+2. **Analiza el historial de mensajes** — Extrae roles, tokens, marcas de tiempo
+3. **Analiza las llamadas a herramientas** — Rastrea tasas de éxito/fallo
+4. **Calcula costos** — Basado en precios estándar de API
+5. **Detecta anomalías** — Reintentos altos, fallos, costos elevados
+6. **Genera reporte** — Salida en terminal o JSON
 
-## Privacy
+## Privacidad
 
-- ✅ 100% local — no data leaves your machine
-- ✅ Read-only — never modifies session files
-- ✅ No API keys — no external services
-- ✅ No tracking — no analytics, no telemetry
+- ✅ 100% local — ningún dato sale de tu máquina
+- ✅ Solo lectura — nunca modifica archivos de sesión
+- ✅ Sin claves API — sin servicios externos
+- ✅ Sin rastreo — sin analytics, sin telemetría
 
 ---
 
-## Contributing
+## Contribuir
 
-See [CONTRIBUTING.md](CONTRIBUTING.md).
+Ver [CONTRIBUTING.md](CONTRIBUTING.md).
 
-## License
+## Licencia
 
 [MIT](LICENSE)
 

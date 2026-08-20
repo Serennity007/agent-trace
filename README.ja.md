@@ -10,7 +10,7 @@
 
 <div align="center">
 
-**What is your AI agent actually doing? Track costs, tokens, tool health, and every conversation.**
+**AIエージェントは実際に何をしているのか？コスト、トークン、ツールの健全性、すべての会話を追跡。**
 
 [![npm](https://img.shields.io/npm/v/agent-trace.svg)](https://www.npmjs.com/package/agent-trace)
 [![npm](https://img.shields.io/npm/dt/agent-trace.svg)](https://www.npmjs.com/package/agent-trace)
@@ -25,51 +25,51 @@
 
 ---
 
-## The Problem
+## 課題
 
-Your AI coding agent runs for hours. It calls tools, burns tokens, retries failed operations. But you have no idea:
+AIコーディングエージェントは何時間も稼働し続けます。ツールを呼び、トークンを消費し、失敗した操作をリトライします。しかし、以下のことがわかりません：
 
-- 💸 How much it actually cost
-- 🔧 Which tools keep failing
-- 🔄 Why it retried 15 times
-- 🐌 Whether the model was slow or the tools were broken
-- ⏱️ How long each conversation took
+- 💸 実際にいくらかかったか
+- 🔧 どのツールが繰り返し失敗しているか
+- 🔄 なぜ15回もリトライしたのか
+- 🐌 モデルが遅いのか、ツールが壊れていたのか
+- ⏱️ それぞれの会話にどのくらい時間がかかったか
 
-## The Solution
+## 解決策
 
 ```bash
 npx agent-trace
 ```
 
-**One command. No API keys. No cloud services. Everything runs locally.**
+**コマンド一つ。APIキー不要。クラウドサービス不要。すべてローカルで実行。**
 
 ---
 
-## Quick Start
+## クイックスタート
 
 ```bash
-# Install
+# インストール
 npm install -g agent-trace
 
-# Auto-detect and analyze all sessions
+# すべてのセッションを自動検出して分析
 agent-trace
 
-# Analyze Kimi Code sessions
+# Kimi Code のセッションを分析
 agent-trace -a kimi-code
 
-# Analyze Claude Code sessions
+# Claude Code のセッションを分析
 agent-trace -a claude-code
 
-# Show top 10 most expensive sessions
+# コスト上位10セッションを表示
 agent-trace -n 10
 
-# Output as JSON
+# JSON で出力
 agent-trace --json
 ```
 
-## What It Shows
+## 表示内容
 
-### Summary View (Multiple Sessions)
+### サマリービュー（複数セッション）
 
 ```
   📊 Summary
@@ -90,7 +90,7 @@ agent-trace --json
      3  session_daecc013-3b5b-44a8-9c19   $1080.48  538,333,781       489
 ```
 
-### Session Detail
+### セッション詳細
 
 ```
   🔍 Agent Trace Report
@@ -138,92 +138,92 @@ agent-trace --json
 
 ---
 
-## Options
+## オプション
 
 ```
 agent-trace [options] [directory]
 
 Options:
-  -s, --session <id>   Analyze specific session
-  -j, --json           Output as JSON
-  -v, --verbose        Show detailed timeline
-  -a, --agent <type>   Agent type (opencode, kimi-code, claude-code, codex)
-  -n, --top <count>    Show top N sessions by cost (default: 5)
-  --all                Show all sessions (including empty)
-  --list-agents        List supported agents
-  -h, --help           Display help
-  -V, --version        Display version
+  -s, --session <id>   特定のセッションを分析
+  -j, --json           JSON で出力
+  -v, --verbose        詳細なタイムラインを表示
+  -a, --agent <type>   エージェントタイプ (opencode, kimi-code, claude-code, codex)
+  -n, --top <count>    コスト上位 N セッションを表示 (デフォルト: 5)
+  --all                すべてのセッションを表示（空のセッションも含む）
+  --list-agents        サポートされているエージェントを一覧表示
+  -h, --help           ヘルプを表示
+  -V, --version        バージョンを表示
 ```
 
-## Supported Agents
+## 対応エージェント
 
-| Agent | Status | Config Path |
-|-------|--------|-------------|
-| **OpenCode** | ✅ Supported | `~/.opencode/sessions/` |
-| **Claude Code** | ✅ Supported | `~/.claude/projects/` |
-| **Kimi Code** | ✅ Supported | `~/.kimi-code/sessions/` |
-| **Codex** | ✅ Supported | `~/.codex/sessions/` |
-| **Cursor** | 🔜 Coming soon | — |
-| **Windsurf** | 🔜 Coming soon | — |
-| **Cline** | 🔜 Coming soon | — |
-| **Continue** | 🔜 Coming soon | — |
+| エージェント | ステータス | 設定パス |
+|-------------|-----------|---------|
+| **OpenCode** | ✅ 対応済み | `~/.opencode/sessions/` |
+| **Claude Code** | ✅ 対応済み | `~/.claude/projects/` |
+| **Kimi Code** | ✅ 対応済み | `~/.kimi-code/sessions/` |
+| **Codex** | ✅ 対応済み | `~/.codex/sessions/` |
+| **Cursor** | 🔜 対応予定 | — |
+| **Windsurf** | 🔜 対応予定 | — |
+| **Cline** | 🔜 対応予定 | — |
+| **Continue** | 🔜 対応予定 | — |
 
-### Auto-Detection
+### 自動検出
 
-By default, agent-trace scans all known paths and auto-detects which agent you're using:
+デフォルトでは、agent-trace はすべての既知のパスをスキャンし、使用中のエージェントを自動検出します：
 
 ```bash
-agent-trace  # Auto-detect and analyze all sessions
+agent-trace  # 自動検出してすべてのセッションを分析
 ```
 
-### Force Specific Agent
+### 特定のエージェントを指定
 
 ```bash
-agent-trace -a claude-code   # Only analyze Claude Code
-agent-trace -a kimi-code     # Only analyze Kimi Code
-agent-trace -a opencode      # Only analyze OpenCode
-agent-trace -a codex         # Only analyze Codex
+agent-trace -a claude-code   # Claude Code のみ分析
+agent-trace -a kimi-code     # Kimi Code のみ分析
+agent-trace -a opencode      # OpenCode のみ分析
+agent-trace -a codex         # Codex のみ分析
 ```
 
-## CI Integration
+## CI 統合
 
 ```yaml
-# GitHub Actions - check agent costs
+# GitHub Actions - エージェントコストの確認
 - name: Check agent costs
   run: |
     npx agent-trace --json > trace.json
     COST=$(jq '.costBreakdown.total.cost' trace.json)
     if (( $(echo "$COST > 10" | bc -l) )); then
-      echo "Agent cost too high: $COST"
+      echo "エージェントコストが高すぎます: $COST"
       exit 1
     fi
 ```
 
 ---
 
-## How It Works
+## 仕組み
 
-1. **Reads local session files** — No network requests, no API calls
-2. **Parses message history** — Extracts roles, tokens, timestamps
-3. **Analyzes tool calls** — Tracks success/failure rates
-4. **Calculates costs** — Based on standard API pricing
-5. **Detects anomalies** — High retries, failures, costs
-6. **Generates report** — Terminal output or JSON
+1. **ローカルセッションファイルを読み取り** — ネットワークリクエストなし、API呼び出しなし
+2. **メッセージ履歴を解析** — ロール、トークン、タイムスタンプを抽出
+3. **ツール呼び出しを分析** — 成功/失敗率を追跡
+4. **コストを算出** — 標準 API 料金に基づく
+5. **異常を検出** — 高リトライ、高失敗率、高コスト
+6. **レポートを生成** — ターミナル出力または JSON
 
-## Privacy
+## プライバシー
 
-- ✅ 100% local — no data leaves your machine
-- ✅ Read-only — never modifies session files
-- ✅ No API keys — no external services
-- ✅ No tracking — no analytics, no telemetry
+- ✅ 100% ローカル — データは外部に送信されません
+- ✅ 読み取り専用 — セッションファイルを変更しません
+- ✅ API キー不要 — 外部サービスに依存しません
+- ✅ トラッキングなし — 分析データやテレメトリもありません
 
 ---
 
-## Contributing
+## コントリビューション
 
-See [CONTRIBUTING.md](CONTRIBUTING.md).
+[CONTRIBUTING.md](CONTRIBUTING.md) をご覧ください。
 
-## License
+## ライセンス
 
 [MIT](LICENSE)
 

@@ -1,3 +1,5 @@
+[English](README.md) | [中文](README.zh.md) | [日本語](README.ja.md) | [Français](README.fr.md) | [Español](README.es.md)
+
 <div align="center">
 
 <img src=".banner.svg" width="100%" alt="banner">
