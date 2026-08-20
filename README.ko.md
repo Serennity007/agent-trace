@@ -10,7 +10,7 @@
 
 <div align="center">
 
-**¿Qué está haciendo realmente tu agente de IA? Rastrea costos, tokens, salud de herramientas y cada conversación.**
+**AI 에이전트가 실제로 무엇을 하고 있나요? 비용, 토큰, 도구 상태, 모든 대화를 추적하세요.**
 
 [![npm](https://img.shields.io/npm/v/agent-trace.svg)](https://www.npmjs.com/package/agent-trace)
 [![npm](https://img.shields.io/npm/dt/agent-trace.svg)](https://www.npmjs.com/package/agent-trace)
@@ -25,51 +25,51 @@
 
 ---
 
-## El problema
+## 문제점
 
-Tu agente de codificación con IA funciona durante horas. Llama herramientas, consume tokens, reintenta operaciones fallidas. Pero no tienes idea:
+AI 코딩 에이전트는 몇 시간 동안 실행됩니다. 도구를 호출하고, 토큰을 소모하고, 실패한 작업을 재시도합니다. 하지만 여러분은 다음을 알 수 없습니다:
 
-- 💸 Cuánto costó realmente
-- 🔧 Qué herramientas siguen fallando
-- 🔄 Por qué reintentó 15 veces
-- 🐌 Si el modelo estaba lento o las herramientas estaban rotas
-- ⏱️ Cuánto tardó cada conversación
+- 💸 실제로 얼마를 썼는지
+- 🔧 어떤 도구가 계속 실패하는지
+- 🔄 왜 15번이나 재시도했는지
+- 🐌 모델이 느렸는지, 도구가 고장났는지
+- ⏱️ 각 대화에 얼마나 걸렸는지
 
-## La solución
+## 해결 방법
 
 ```bash
 npx agent-trace
 ```
 
-**Un solo comando. Sin claves API. Sin servicios en la nube. Todo se ejecuta localmente.**
+**명령어 하나. API 키 불필요. 클라우드 서비스 불필요. 모든 것이 로컬에서 실행됩니다.**
 
 ---
 
-## Inicio rápido
+## 빠른 시작
 
 ```bash
-# Instalar
+# 설치
 npm install -g agent-trace
 
-# Detectar automáticamente y analizar todas las sesiones
+# 자동 감지 및 모든 세션 분석
 agent-trace
 
-# Analizar sesiones de Kimi Code
+# Kimi Code 세션 분석
 agent-trace -a kimi-code
 
-# Analizar sesiones de Claude Code
+# Claude Code 세션 분석
 agent-trace -a claude-code
 
-# Mostrar las 10 sesiones más costosas
+# 비용 상위 10개 세션 표시
 agent-trace -n 10
 
-# Salida en formato JSON
+# JSON으로 출력
 agent-trace --json
 ```
 
-## Lo que muestra
+## 표시되는 내용
 
-### Vista resumen (múltiples sesiones)
+### 요약 보기 (여러 세션)
 
 ```
   📊 Summary
@@ -90,7 +90,7 @@ agent-trace --json
      3  session_daecc013-3b5b-44a8-9c19   $1080.48  538,333,781       489
 ```
 
-### Detalle de sesión
+### 세션 상세
 
 ```
   🔍 Agent Trace Report
@@ -138,97 +138,97 @@ agent-trace --json
 
 ---
 
-## Opciones
+## 옵션
 
 ```
 agent-trace [options] [directory]
 
 Options:
-  -s, --session <id>   Analizar sesión específica
-  -j, --json           Salida en formato JSON
-  -v, --verbose        Mostrar línea de tiempo detallada
-  -a, --agent <type>   Tipo de agente (opencode, kimi-code, claude-code, codex)
-  -n, --top <count>    Mostrar las N sesiones más costosas (por defecto: 5)
-  --all                Mostrar todas las sesiones (incluidas las vacías)
-  --list-agents        Listar agentes compatibles
-  -h, --help           Mostrar ayuda
-  -V, --version        Mostrar versión
+  -s, --session <id>   Analyze specific session
+  -j, --json           Output as JSON
+  -v, --verbose        Show detailed timeline
+  -a, --agent <type>   Agent type (opencode, kimi-code, claude-code, codex)
+  -n, --top <count>    Show top N sessions by cost (default: 5)
+  --all                Show all sessions (including empty)
+  --list-agents        List supported agents
+  -h, --help           Display help
+  -V, --version        Display version
 ```
 
-## Agentes compatibles
+## 지원되는 에이전트
 
-| Agente | Estado | Ruta de configuración |
-|--------|--------|-----------------------|
-| **OpenCode** | ✅ Compatible | `~/.opencode/sessions/` |
-| **Claude Code** | ✅ Compatible | `~/.claude/projects/` |
-| **Kimi Code** | ✅ Compatible | `~/.kimi-code/sessions/` |
-| **Codex** | ✅ Compatible | `~/.codex/sessions/` |
-| **Cursor** | 🔜 Próximamente | — |
-| **Windsurf** | 🔜 Próximamente | — |
-| **Cline** | 🔜 Próximamente | — |
-| **Continue** | 🔜 Próximamente | — |
+| 에이전트 | 상태 | 설정 경로 |
+|---------|------|----------|
+| **OpenCode** | ✅ 지원됨 | `~/.opencode/sessions/` |
+| **Claude Code** | ✅ 지원됨 | `~/.claude/projects/` |
+| **Kimi Code** | ✅ 지원됨 | `~/.kimi-code/sessions/` |
+| **Codex** | ✅ 지원됨 | `~/.codex/sessions/` |
+| **Cursor** | 🔜 출시 예정 | — |
+| **Windsurf** | 🔜 출시 예정 | — |
+| **Cline** | 🔜 출시 예정 | — |
+| **Continue** | 🔜 출시 예정 | — |
 
-### Detección automática
+### 자동 감지
 
-Por defecto, agent-trace escanea todas las rutas conocidas y detecta automáticamente qué agente estás usando:
+기본적으로 agent-trace는 모든 알려진 경로를 스캔하여 사용 중인 에이전트를 자동 감지합니다:
 
 ```bash
-agent-trace  # Detección automática y análisis de todas las sesiones
+agent-trace  # 자동 감지 및 모든 세션 분석
 ```
 
-### Forzar un agente específico
+### 특정 에이전트 강제 지정
 
 ```bash
-agent-trace -a claude-code   # Solo analizar Claude Code
-agent-trace -a kimi-code     # Solo analizar Kimi Code
-agent-trace -a opencode      # Solo analizar OpenCode
-agent-trace -a codex         # Solo analizar Codex
+agent-trace -a claude-code   # Claude Code만 분석
+agent-trace -a kimi-code     # Kimi Code만 분석
+agent-trace -a opencode      # OpenCode만 분석
+agent-trace -a codex         # Codex만 분석
 ```
 
-## Integración CI
+## CI 통합
 
 ```yaml
-# GitHub Actions - verificar costos del agente
+# GitHub Actions - 에이전트 비용 확인
 - name: Check agent costs
   run: |
     npx agent-trace --json > trace.json
     COST=$(jq '.costBreakdown.total.cost' trace.json)
     if (( $(echo "$COST > 10" | bc -l) )); then
-      echo "Costo del agente demasiado alto: $COST"
+      echo "Agent cost too high: $COST"
       exit 1
     fi
 ```
 
 ---
 
-## Cómo funciona
+## 작동 방식
 
-1. **Lee archivos de sesión locales** — Sin peticiones de red, sin llamadas API
-2. **Analiza el historial de mensajes** — Extrae roles, tokens, marcas de tiempo
-3. **Analiza las llamadas a herramientas** — Rastrea tasas de éxito/fallo
-4. **Calcula costos** — Basado en precios estándar de API
-5. **Detecta anomalías** — Reintentos altos, fallos, costos elevados
-6. **Genera reporte** — Salida en terminal o JSON
+1. **로컬 세션 파일 읽기** — 네트워크 요청 없음, API 호출 없음
+2. **메시지 기록 분석** — 역할, 토큰, 타임스탬프 추출
+3. **도구 호출 분석** — 성공/실패 비율 추적
+4. **비용 계산** — 표준 API 가격 기준
+5. **이상 감지** — 높은 재시도율, 실패, 비용
+6. **보고서 생성** — 터미널 출력 또는 JSON
 
-## Privacidad
+## 개인정보 보호
 
-- ✅ 100% local — ningún dato sale de tu máquina
-- ✅ Solo lectura — nunca modifica archivos de sesión
-- ✅ Sin claves API — sin servicios externos
-- ✅ Sin rastreo — sin analytics, sin telemetría
+- ✅ 100% 로컬 — 데이터가 사용자의 기기를 떠나지 않음
+- ✅ 읽기 전용 — 세션 파일을 절대 수정하지 않음
+- ✅ API 키 불필요 — 외부 서비스 없음
+- ✅ 추적 없음 — 분석 없음, 원격 측정 없음
 
 ---
 
-## Contribuir
+## 기여하기
 
-Ver [CONTRIBUTING.md](CONTRIBUTING.md).
+[CONTRIBUTING.md](CONTRIBUTING.md)를 참조하세요.
 
-## Licencia
+## 라이선스
 
 [MIT](LICENSE)
 
 ---
 
-## 中文版本
+## 中文 버전
 
 [README.zh.md](README.zh.md)

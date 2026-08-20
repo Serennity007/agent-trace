@@ -10,7 +10,7 @@
 
 <div align="center">
 
-**¿Qué está haciendo realmente tu agente de IA? Rastrea costos, tokens, salud de herramientas y cada conversación.**
+**Что на самом деле делает ваш ИИ-агент? Отслеживайте расходы, токены, состояние инструментов и каждую беседу.**
 
 [![npm](https://img.shields.io/npm/v/agent-trace.svg)](https://www.npmjs.com/package/agent-trace)
 [![npm](https://img.shields.io/npm/dt/agent-trace.svg)](https://www.npmjs.com/package/agent-trace)
@@ -25,51 +25,51 @@
 
 ---
 
-## El problema
+## Проблема
 
-Tu agente de codificación con IA funciona durante horas. Llama herramientas, consume tokens, reintenta operaciones fallidas. Pero no tienes idea:
+Ваш ИИ-агент для программирования работает часами. Он вызывает инструменты, расходует токены, повторяет неудачные операции. Но вы не знаете:
 
-- 💸 Cuánto costó realmente
-- 🔧 Qué herramientas siguen fallando
-- 🔄 Por qué reintentó 15 veces
-- 🐌 Si el modelo estaba lento o las herramientas estaban rotas
-- ⏱️ Cuánto tardó cada conversación
+- 💸 Сколько это на самом деле стоило
+- 🔧 Какие инструменты постоянно сбоят
+- 🔄 Почему была предпринята 15-я попытка
+- 🐌 Медленная была модель или сломаны инструменты
+- ⏱️ Сколько времени заняла каждая беседа
 
-## La solución
+## Решение
 
 ```bash
 npx agent-trace
 ```
 
-**Un solo comando. Sin claves API. Sin servicios en la nube. Todo se ejecuta localmente.**
+**Одна команда. Без ключей API. Без облачных сервисов. Всё работает локально.**
 
 ---
 
-## Inicio rápido
+## Быстрый старт
 
 ```bash
-# Instalar
+# Установка
 npm install -g agent-trace
 
-# Detectar automáticamente y analizar todas las sesiones
+# Автоопределение и анализ всех сессий
 agent-trace
 
-# Analizar sesiones de Kimi Code
+# Анализ сессий Kimi Code
 agent-trace -a kimi-code
 
-# Analizar sesiones de Claude Code
+# Анализ сессий Claude Code
 agent-trace -a claude-code
 
-# Mostrar las 10 sesiones más costosas
+# Показать 10 самых дорогих сессий
 agent-trace -n 10
 
-# Salida en formato JSON
+# Вывод в формате JSON
 agent-trace --json
 ```
 
-## Lo que muestra
+## Что показывает инструмент
 
-### Vista resumen (múltiples sesiones)
+### Сводный обзор (несколько сессий)
 
 ```
   📊 Summary
@@ -90,7 +90,7 @@ agent-trace --json
      3  session_daecc013-3b5b-44a8-9c19   $1080.48  538,333,781       489
 ```
 
-### Detalle de sesión
+### Детали сессии
 
 ```
   🔍 Agent Trace Report
@@ -138,97 +138,97 @@ agent-trace --json
 
 ---
 
-## Opciones
+## Параметры
 
 ```
 agent-trace [options] [directory]
 
 Options:
-  -s, --session <id>   Analizar sesión específica
-  -j, --json           Salida en formato JSON
-  -v, --verbose        Mostrar línea de tiempo detallada
-  -a, --agent <type>   Tipo de agente (opencode, kimi-code, claude-code, codex)
-  -n, --top <count>    Mostrar las N sesiones más costosas (por defecto: 5)
-  --all                Mostrar todas las sesiones (incluidas las vacías)
-  --list-agents        Listar agentes compatibles
-  -h, --help           Mostrar ayuda
-  -V, --version        Mostrar versión
+  -s, --session <id>   Analyze specific session
+  -j, --json           Output as JSON
+  -v, --verbose        Show detailed timeline
+  -a, --agent <type>   Agent type (opencode, kimi-code, claude-code, codex)
+  -n, --top <count>    Show top N sessions by cost (default: 5)
+  --all                Show all sessions (including empty)
+  --list-agents        List supported agents
+  -h, --help           Display help
+  -V, --version        Display version
 ```
 
-## Agentes compatibles
+## Поддерживаемые агенты
 
-| Agente | Estado | Ruta de configuración |
-|--------|--------|-----------------------|
-| **OpenCode** | ✅ Compatible | `~/.opencode/sessions/` |
-| **Claude Code** | ✅ Compatible | `~/.claude/projects/` |
-| **Kimi Code** | ✅ Compatible | `~/.kimi-code/sessions/` |
-| **Codex** | ✅ Compatible | `~/.codex/sessions/` |
-| **Cursor** | 🔜 Próximamente | — |
-| **Windsurf** | 🔜 Próximamente | — |
-| **Cline** | 🔜 Próximamente | — |
-| **Continue** | 🔜 Próximamente | — |
+| Агент | Статус | Путь конфигурации |
+|-------|--------|-------------------|
+| **OpenCode** | ✅ Поддерживается | `~/.opencode/sessions/` |
+| **Claude Code** | ✅ Поддерживается | `~/.claude/projects/` |
+| **Kimi Code** | ✅ Поддерживается | `~/.kimi-code/sessions/` |
+| **Codex** | ✅ Поддерживается | `~/.codex/sessions/` |
+| **Cursor** | 🔜 Скоро | — |
+| **Windsurf** | 🔜 Скоро | — |
+| **Cline** | 🔜 Скоро | — |
+| **Continue** | 🔜 Скоро | — |
 
-### Detección automática
+### Автоопределение
 
-Por defecto, agent-trace escanea todas las rutas conocidas y detecta automáticamente qué agente estás usando:
+По умолчанию agent-trace сканирует все известные пути и автоматически определяет, какой агент вы используете:
 
 ```bash
-agent-trace  # Detección automática y análisis de todas las sesiones
+agent-trace  # Автоопределение и анализ всех сессий
 ```
 
-### Forzar un agente específico
+### Принудительный выбор агента
 
 ```bash
-agent-trace -a claude-code   # Solo analizar Claude Code
-agent-trace -a kimi-code     # Solo analizar Kimi Code
-agent-trace -a opencode      # Solo analizar OpenCode
-agent-trace -a codex         # Solo analizar Codex
+agent-trace -a claude-code   # Анализ только Claude Code
+agent-trace -a kimi-code     # Анализ только Kimi Code
+agent-trace -a opencode      # Анализ только OpenCode
+agent-trace -a codex         # Анализ только Codex
 ```
 
-## Integración CI
+## Интеграция с CI
 
 ```yaml
-# GitHub Actions - verificar costos del agente
+# GitHub Actions - проверка расходов агента
 - name: Check agent costs
   run: |
     npx agent-trace --json > trace.json
     COST=$(jq '.costBreakdown.total.cost' trace.json)
     if (( $(echo "$COST > 10" | bc -l) )); then
-      echo "Costo del agente demasiado alto: $COST"
+      echo "Agent cost too high: $COST"
       exit 1
     fi
 ```
 
 ---
 
-## Cómo funciona
+## Принцип работы
 
-1. **Lee archivos de sesión locales** — Sin peticiones de red, sin llamadas API
-2. **Analiza el historial de mensajes** — Extrae roles, tokens, marcas de tiempo
-3. **Analiza las llamadas a herramientas** — Rastrea tasas de éxito/fallo
-4. **Calcula costos** — Basado en precios estándar de API
-5. **Detecta anomalías** — Reintentos altos, fallos, costos elevados
-6. **Genera reporte** — Salida en terminal o JSON
+1. **Чтение локальных файлов сессий** — Без сетевых запросов, без вызовов API
+2. **Анализ истории сообщений** — Извлечение ролей, токенов, временных меток
+3. **Анализ вызовов инструментов** — Отслеживание частоты успехов и сбоев
+4. **Расчёт стоимости** — На основе стандартных цен API
+5. **Обнаружение аномалий** — Частые повторы, сбои, высокие расходы
+6. **Генерация отчёта** — Вывод в терминал или в формате JSON
 
-## Privacidad
+## Конфиденциальность
 
-- ✅ 100% local — ningún dato sale de tu máquina
-- ✅ Solo lectura — nunca modifica archivos de sesión
-- ✅ Sin claves API — sin servicios externos
-- ✅ Sin rastreo — sin analytics, sin telemetría
+- ✅ 100% локально — данные не покидают ваш компьютер
+- ✅ Только чтение — никогда не изменяет файлы сессий
+- ✅ Без ключей API — без внешних сервисов
+- ✅ Без отслеживания — без аналитики, без телеметрии
 
 ---
 
-## Contribuir
+## Участие в проекте
 
-Ver [CONTRIBUTING.md](CONTRIBUTING.md).
+См. [CONTRIBUTING.md](CONTRIBUTING.md).
 
-## Licencia
+## Лицензия
 
 [MIT](LICENSE)
 
 ---
 
-## 中文版本
+## 中文版
 
 [README.zh.md](README.zh.md)
