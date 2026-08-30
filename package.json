@@ -1,6 +1,6 @@
 {
   "name": "agent-trace",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Trace your AI coding agent - costs, tokens, tool health, session timeline",
   "main": "src/index.js",
   "bin": {
@@ -23,11 +23,11 @@
     "cli",
     "developer-tools"
   ],
-  "author": "liangzhengtao",
+  "author": "Serennity007",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/liangzhengtao/agent-trace.git"
+    "url": "git+https://github.com/Serennity007/agent-trace.git"
   },
   "engines": {
     "node": ">=16.0.0"

@@ -1,0 +1,35 @@
+<svg width="900" height="464" viewBox="0 0 900 464" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Terminal demo: zhengtao@dev — npx agent-trace">
+  <title>zhengtao@dev — npx agent-trace</title>
+  <defs>
+    <linearGradient id="glow" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#00d4ff" stop-opacity="0.06"/>
+      <stop offset="1" stop-color="#8b5cf6" stop-opacity="0.06"/>
+    </linearGradient>
+  </defs>
+  <rect x="1.5" y="1.5" width="897" height="461" rx="13" fill="#0c0c14"/>
+  <rect x="1.5" y="1.5" width="897" height="461" rx="13" fill="url(#glow)"/>
+  <rect x="1.5" y="1.5" width="897" height="461" rx="13" fill="none" stroke="#00d4ff" stroke-opacity="0.35" stroke-width="1.5"/>
+  <path d="M22 1.5 h-7 a13.5 13.5 0 0 0 -13.5 13.5 v7 M878 1.5 h7 a13.5 13.5 0 0 1 13.5 13.5 v7 M898.5 442 v7 a13.5 13.5 0 0 1 -13.5 13.5 h-7 M22 462.5 h-7 a13.5 13.5 0 0 1 -13.5 -13.5 v-7" stroke="#00d4ff" stroke-opacity="0.9" stroke-width="2" fill="none" stroke-linecap="round"/>
+  <circle cx="30" cy="22" r="5" fill="#ff5f57"/>
+  <circle cx="49" cy="22" r="5" fill="#febc2e"/>
+  <circle cx="68" cy="22" r="5" fill="#28c840"/>
+  <text x="870" y="26" text-anchor="end" font-family="JetBrains Mono, Consolas, Courier New, monospace" font-size="12" fill="#5d6b82">zhengtao@dev — npx agent-trace</text>
+  <line x1="16" y1="42" x2="884" y2="42" stroke="#ffffff" stroke-opacity="0.08"/>
+  <g font-family="JetBrains Mono, Consolas, Courier New, monospace" font-size="14">
+    <text x="26" y="56" opacity="0"><tspan fill="#00d4ff">$ </tspan><tspan fill="#e8eaf6" font-weight="600">npx agent-trace</tspan><animate attributeName="opacity" values="0;1" begin="0.20s" dur="0.18s" fill="freeze"/></text>
+    <text x="26" y="98" opacity="0"><tspan fill="#00d4ff">▸ </tspan><tspan fill="#00d4ff" font-weight="600">agent-trace</tspan><tspan fill="#8b95a7"> — AI Agent Trajectory Analyzer</tspan><animate attributeName="opacity" values="0;1" begin="0.66s" dur="0.18s" fill="freeze"/></text>
+    <text x="26" y="119" opacity="0"><tspan fill="#3fb950">✓ </tspan><tspan fill="#8b95a7">Found 9 session(s) with content</tspan><animate attributeName="opacity" values="0;1" begin="0.96s" dur="0.18s" fill="freeze"/></text>
+    <text x="26" y="161" opacity="0"><tspan fill="#8b5cf6" font-weight="600">▍Summary</tspan><animate attributeName="opacity" values="0;1" begin="1.42s" dur="0.18s" fill="freeze"/></text>
+    <text x="26" y="182" opacity="0"><tspan x="30" fill="#8b95a7">Sessions</tspan><tspan x="130" fill="#e8eaf6">9</tspan><tspan x="210" fill="#8b95a7">Time</tspan><tspan x="300" fill="#e8eaf6">15s</tspan><animate attributeName="opacity" values="0;1" begin="1.72s" dur="0.18s" fill="freeze"/></text>
+    <text x="26" y="203" opacity="0"><tspan x="30" fill="#8b95a7">Cost</tspan><tspan x="130" fill="#3fb950" font-weight="600">$0.0264</tspan><tspan x="210" fill="#8b95a7">Tokens</tspan><tspan x="300" fill="#e8eaf6">7,826</tspan><animate attributeName="opacity" values="0;1" begin="2.02s" dur="0.18s" fill="freeze"/></text>
+    <text x="26" y="245" opacity="0"><tspan fill="#8b5cf6" font-weight="600">▍Top 3 Most Expensive Sessions</tspan><animate attributeName="opacity" values="0;1" begin="2.48s" dur="0.18s" fill="freeze"/></text>
+    <text x="26" y="266" opacity="0"><tspan x="30" fill="#8b95a7">RANK</tspan><tspan x="78" fill="#8b95a7">SESSION</tspan><tspan x="190" fill="#8b95a7">COST</tspan><tspan x="300" fill="#8b95a7">TOKENS</tspan><animate attributeName="opacity" values="0;1" begin="2.78s" dur="0.18s" fill="freeze"/></text>
+    <text x="26" y="287" opacity="0"><tspan x="30" fill="#e8eaf6">1</tspan><tspan x="78" fill="#e8eaf6">87b7616e</tspan><tspan x="190" fill="#3fb950">$0.0111</tspan><tspan x="300" fill="#8b95a7">3,212</tspan><animate attributeName="opacity" values="0;1" begin="3.08s" dur="0.18s" fill="freeze"/></text>
+    <text x="26" y="308" opacity="0"><tspan x="30" fill="#e8eaf6">2</tspan><tspan x="78" fill="#e8eaf6">7b094566</tspan><tspan x="190" fill="#3fb950">$0.0094</tspan><tspan x="300" fill="#8b95a7">3,022</tspan><animate attributeName="opacity" values="0;1" begin="3.38s" dur="0.18s" fill="freeze"/></text>
+    <text x="26" y="329" opacity="0"><tspan x="30" fill="#e8eaf6">3</tspan><tspan x="78" fill="#e8eaf6">1a4fe14e</tspan><tspan x="190" fill="#3fb950">$0.0059</tspan><tspan x="300" fill="#8b95a7">1,592</tspan><animate attributeName="opacity" values="0;1" begin="3.68s" dur="0.18s" fill="freeze"/></text>
+    <text x="26" y="371" opacity="0"><tspan fill="#8b95a7">read-only · 100% local · no API keys</tspan><animate attributeName="opacity" values="0;1" begin="4.14s" dur="0.18s" fill="freeze"/></text>
+    <text x="26" y="392" opacity="0"><tspan fill="#8b95a7">github.com/Serennity007/agent-trace</tspan><animate attributeName="opacity" values="0;1" begin="4.44s" dur="0.18s" fill="freeze"/></text>
+    <text x="26" y="413" opacity="0"><tspan fill="#00d4ff">$ </tspan><tspan fill="#e8eaf6"></tspan><animate attributeName="opacity" values="0;1" begin="4.74s" dur="0.18s" fill="freeze"/></text>
+  </g>
+  <rect x="52" y="401" width="8" height="15" fill="#00d4ff"><animate attributeName="opacity" values="1;1;0;0" keyTimes="0;0.5;0.5;1" dur="1.1s" repeatCount="indefinite"/></rect>
+</svg>

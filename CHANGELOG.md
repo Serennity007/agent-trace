@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.0.3] - 2026-08-30
+
+### Fixed
+- All GitHub links updated from old username `liangzhengtao` to `Serennity007` (old username no longer exists, no redirect)
+- Terminal footer now prints the correct repository URL
+
 ## [1.0.2] - 2026-08-19
 
 ### Fixed

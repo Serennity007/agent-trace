@@ -25,7 +25,7 @@ Open an issue with your idea.
 ## Development
 
 ```bash
-git clone https://github.com/liangzhengtao/agent-trace.git
+git clone https://github.com/Serennity007/agent-trace.git
 cd agent-trace
 npm install
 npm test

@@ -49,8 +49,8 @@
 
   <!-- Bottom bar -->
   <rect x="0" y="600" width="1280" height="40" fill="rgba(255,255,255,0.02)"/>
-  <text x="80" y="625" font-family="system-ui, -apple-system, sans-serif" font-size="13" fill="#484f58">github.com/liangzhengtao/agent-trace</text>
-  <text x="1200" y="625" font-family="system-ui, -apple-system, sans-serif" font-size="13" fill="#484f58" text-anchor="end">liangzhengtao</text>
+  <text x="80" y="625" font-family="system-ui, -apple-system, sans-serif" font-size="13" fill="#484f58">github.com/Serennity007/agent-trace</text>
+  <text x="1200" y="625" font-family="system-ui, -apple-system, sans-serif" font-size="13" fill="#484f58" text-anchor="end">Serennity007</text>
 
   <!-- Decorative circles -->
   <circle cx="1100" cy="200" r="150" fill="#667eea" opacity="0.05"/>

@@ -248,7 +248,7 @@ async function main() {
     }
 
     console.log(DIVIDER);
-    console.log(chalk.dim('  agent-trace | Read-only, local analysis | github.com/liangzhengtao/agent-trace'));
+    console.log(chalk.dim('  agent-trace | Read-only, local analysis | github.com/Serennity007/agent-trace'));
     console.log('');
   } else {
     // Single session or specific session requested

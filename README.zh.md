@@ -17,6 +17,10 @@
 
 </div>
 
+<div align="center">
+<img src="https://raw.githubusercontent.com/Serennity007/agent-trace/main/.github/demo.svg" width="100%" alt="demo">
+</div>
+
 ---
 
 ## 问题

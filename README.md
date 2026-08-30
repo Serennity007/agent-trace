@@ -18,7 +18,7 @@
   <a href="https://www.npmjs.com/package/agent-trace"><img src="https://img.shields.io/npm/v/agent-trace.svg?style=for-the-badge&logo=npm&logoColor=white&color=00d4ff" alt="npm version"></a>
   <a href="https://www.npmjs.com/package/agent-trace"><img src="https://img.shields.io/npm/dt/agent-trace.svg?style=for-the-badge&logo=npm&logoColor=white&color=6e40c9" alt="npm downloads"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-00d4ff?style=for-the-badge&logo=opensourceinitiative&logoColor=white" alt="License: MIT"></a>
-  <a href="https://github.com/liangzhengtao/agent-trace/stargazers"><img src="https://img.shields.io/github/stars/liangzhengtao/agent-trace.svg?style=for-the-badge&logo=github&logoColor=white&color=6e40c9" alt="GitHub Stars"></a>
+  <a href="https://github.com/Serennity007/agent-trace/stargazers"><img src="https://img.shields.io/github/stars/Serennity007/agent-trace.svg?style=for-the-badge&logo=github&logoColor=white&color=6e40c9" alt="GitHub Stars"></a>
   <img src="https://img.shields.io/badge/Node.js-%3E%3D18-00d4ff?style=for-the-badge&logo=node.js&logoColor=white" alt="Node version">
 </p>
 
@@ -39,7 +39,7 @@
 <!-- 🎬 DEMO                                                           -->
 <!-- ═══════════════════════════════════════════════════════════════════ -->
 <p align="center">
-  <img src="https://raw.githubusercontent.com/liangzhengtao/agent-trace/main/.github/demo.svg" alt="Agent Trace Demo" width="700">
+  <img src="https://raw.githubusercontent.com/Serennity007/agent-trace/main/.github/demo.svg" alt="Agent Trace Demo" width="700">
 </p>
 
 ---
@@ -282,25 +282,25 @@ Contributions are welcome! Here's how to get started:
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for full guidelines.
 
-<a href="https://github.com/liangzhengtao/agent-trace/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=liangzhengtao/agent-trace" alt="Contributors" />
+<a href="https://github.com/Serennity007/agent-trace/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=Serennity007/agent-trace" alt="Contributors" />
 </a>
 
 ---
 
 ## 📖 License
 
-[MIT](LICENSE) © [liangzhengtao](https://github.com/liangzhengtao)
+[MIT](LICENSE) © [Serennity007](https://github.com/Serennity007)
 
 ---
 
 ## 🔗 See Also
 
-Other tools by [liangzhengtao](https://github.com/liangzhengtao):
+Other tools by [Serennity007](https://github.com/Serennity007):
 
 | Repository | Description |
 |------------|-------------|
-| [**agent-trace**](https://github.com/liangzhengtao/agent-trace) | 🔍 Observe your AI agents — costs, tokens, tool health |
+| [**agent-trace**](https://github.com/Serennity007/agent-trace) | 🔍 Observe your AI agents — costs, tokens, tool health |
 
 > *Have a project to list here? Open a PR!*
 
