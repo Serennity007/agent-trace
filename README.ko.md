@@ -12,8 +12,8 @@
 
 **AI 에이전트가 실제로 무엇을 하고 있나요? 비용, 토큰, 도구 상태, 모든 대화를 추적하세요.**
 
-[![npm](https://img.shields.io/npm/v/agent-trace.svg)](https://www.npmjs.com/package/agent-trace)
-[![npm](https://img.shields.io/npm/dt/agent-trace.svg)](https://www.npmjs.com/package/agent-trace)
+[![npm](https://img.shields.io/npm/v/@liangzhengtao/agent-trace.svg)](https://www.npmjs.com/package/@liangzhengtao/agent-trace)
+[![npm](https://img.shields.io/npm/dt/@liangzhengtao/agent-trace.svg)](https://www.npmjs.com/package/@liangzhengtao/agent-trace)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![GitHub Stars](https://img.shields.io/github/stars/Serennity007/agent-trace.svg)](https://github.com/Serennity007/agent-trace)
 
@@ -38,7 +38,7 @@ AI 코딩 에이전트는 몇 시간 동안 실행됩니다. 도구를 호출하
 ## 해결 방법
 
 ```bash
-npx agent-trace
+npx @liangzhengtao/agent-trace
 ```
 
 **명령어 하나. API 키 불필요. 클라우드 서비스 불필요. 모든 것이 로컬에서 실행됩니다.**
@@ -191,7 +191,7 @@ agent-trace -a codex         # Codex만 분석
 # GitHub Actions - 에이전트 비용 확인
 - name: Check agent costs
   run: |
-    npx agent-trace --json > trace.json
+    npx @liangzhengtao/agent-trace --json > trace.json
     COST=$(jq '.costBreakdown.total.cost' trace.json)
     if (( $(echo "$COST > 10" | bc -l) )); then
       echo "Agent cost too high: $COST"

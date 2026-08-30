@@ -15,8 +15,8 @@
 <!-- 🏷️ BADGES                                                        -->
 <!-- ═══════════════════════════════════════════════════════════════════ -->
 <p align="center">
-  <a href="https://www.npmjs.com/package/agent-trace"><img src="https://img.shields.io/npm/v/agent-trace.svg?style=for-the-badge&logo=npm&logoColor=white&color=00d4ff" alt="npm version"></a>
-  <a href="https://www.npmjs.com/package/agent-trace"><img src="https://img.shields.io/npm/dt/agent-trace.svg?style=for-the-badge&logo=npm&logoColor=white&color=6e40c9" alt="npm downloads"></a>
+  <a href="https://www.npmjs.com/package/@liangzhengtao/agent-trace"><img src="https://img.shields.io/npm/v/@liangzhengtao/agent-trace.svg?style=for-the-badge&logo=npm&logoColor=white&color=00d4ff" alt="npm version"></a>
+  <a href="https://www.npmjs.com/package/@liangzhengtao/agent-trace"><img src="https://img.shields.io/npm/dt/@liangzhengtao/agent-trace.svg?style=for-the-badge&logo=npm&logoColor=white&color=6e40c9" alt="npm downloads"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-00d4ff?style=for-the-badge&logo=opensourceinitiative&logoColor=white" alt="License: MIT"></a>
   <a href="https://github.com/Serennity007/agent-trace/stargazers"><img src="https://img.shields.io/github/stars/Serennity007/agent-trace.svg?style=for-the-badge&logo=github&logoColor=white&color=6e40c9" alt="GitHub Stars"></a>
   <img src="https://img.shields.io/badge/Node.js-%3E%3D18-00d4ff?style=for-the-badge&logo=node.js&logoColor=white" alt="Node version">
@@ -30,7 +30,7 @@
 </p>
 
 <p align="center">
-  <code>npx agent-trace</code> &nbsp;·&nbsp; No API keys &nbsp;·&nbsp; No cloud services &nbsp;·&nbsp; 100% local
+  <code>npx @liangzhengtao/agent-trace</code> &nbsp;·&nbsp; No API keys &nbsp;·&nbsp; No cloud services &nbsp;·&nbsp; 100% local
 </p>
 
 ---
@@ -81,7 +81,7 @@ Your AI coding agent runs for hours. It calls tools, burns tokens, retries faile
 ## 💡 The Solution
 
 ```bash
-npx agent-trace
+npx @liangzhengtao/agent-trace
 ```
 
 **One command. No API keys. No cloud services. Everything runs locally.**
@@ -240,7 +240,7 @@ agent-trace -a codex         # Only analyze Codex
 # GitHub Actions - check agent costs
 - name: Check agent costs
   run: |
-    npx agent-trace --json > trace.json
+    npx @liangzhengtao/agent-trace --json > trace.json
     COST=$(jq '.costBreakdown.total.cost' trace.json)
     if (( $(echo "$COST > 10" | bc -l) )); then
       echo "Agent cost too high: $COST"

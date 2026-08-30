@@ -12,8 +12,8 @@
 
 **Was macht Ihr KI-Agent wirklich? Verfolgen Sie Kosten, Token, Tool-Zustand und jedes Gespräch.**
 
-[![npm](https://img.shields.io/npm/v/agent-trace.svg)](https://www.npmjs.com/package/agent-trace)
-[![npm](https://img.shields.io/npm/dt/agent-trace.svg)](https://www.npmjs.com/package/agent-trace)
+[![npm](https://img.shields.io/npm/v/@liangzhengtao/agent-trace.svg)](https://www.npmjs.com/package/@liangzhengtao/agent-trace)
+[![npm](https://img.shields.io/npm/dt/@liangzhengtao/agent-trace.svg)](https://www.npmjs.com/package/@liangzhengtao/agent-trace)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![GitHub Stars](https://img.shields.io/github/stars/Serennity007/agent-trace.svg)](https://github.com/Serennity007/agent-trace)
 
@@ -38,7 +38,7 @@ Ihr KI-Coding-Agent läuft stundenlang. Er ruft Tools auf, verbraucht Token, wie
 ## Die Lösung
 
 ```bash
-npx agent-trace
+npx @liangzhengtao/agent-trace
 ```
 
 **Ein Befehl. Keine API-Schlüssel. Keine Cloud-Dienste. Alles läuft lokal.**
@@ -191,7 +191,7 @@ agent-trace -a codex         # Nur Codex analysieren
 # GitHub Actions - Agent-Kosten prüfen
 - name: Check agent costs
   run: |
-    npx agent-trace --json > trace.json
+    npx @liangzhengtao/agent-trace --json > trace.json
     COST=$(jq '.costBreakdown.total.cost' trace.json)
     if (( $(echo "$COST > 10" | bc -l) )); then
       echo "Agent cost too high: $COST"

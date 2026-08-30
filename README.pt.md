@@ -12,8 +12,8 @@
 
 **O que seu agente de IA realmente está fazendo? Rastreie custos, tokens, saúde das ferramentas e cada conversa.**
 
-[![npm](https://img.shields.io/npm/v/agent-trace.svg)](https://www.npmjs.com/package/agent-trace)
-[![npm](https://img.shields.io/npm/dt/agent-trace.svg)](https://www.npmjs.com/package/agent-trace)
+[![npm](https://img.shields.io/npm/v/@liangzhengtao/agent-trace.svg)](https://www.npmjs.com/package/@liangzhengtao/agent-trace)
+[![npm](https://img.shields.io/npm/dt/@liangzhengtao/agent-trace.svg)](https://www.npmjs.com/package/@liangzhengtao/agent-trace)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![GitHub Stars](https://img.shields.io/github/stars/Serennity007/agent-trace.svg)](https://github.com/Serennity007/agent-trace)
 
@@ -38,7 +38,7 @@ Seu agente de programação com IA funciona por horas. Ele chama ferramentas, co
 ## A Solução
 
 ```bash
-npx agent-trace
+npx @liangzhengtao/agent-trace
 ```
 
 **Um comando. Sem chaves de API. Sem serviços na nuvem. Tudo roda localmente.**
@@ -191,7 +191,7 @@ agent-trace -a codex         # Analisar apenas Codex
 # GitHub Actions - verificar custos do agente
 - name: Check agent costs
   run: |
-    npx agent-trace --json > trace.json
+    npx @liangzhengtao/agent-trace --json > trace.json
     COST=$(jq '.costBreakdown.total.cost' trace.json)
     if (( $(echo "$COST > 10" | bc -l) )); then
       echo "Agent cost too high: $COST"

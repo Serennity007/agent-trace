@@ -12,8 +12,8 @@
 
 **AIエージェントは実際に何をしているのか？コスト、トークン、ツールの健全性、すべての会話を追跡。**
 
-[![npm](https://img.shields.io/npm/v/agent-trace.svg)](https://www.npmjs.com/package/agent-trace)
-[![npm](https://img.shields.io/npm/dt/agent-trace.svg)](https://www.npmjs.com/package/agent-trace)
+[![npm](https://img.shields.io/npm/v/@liangzhengtao/agent-trace.svg)](https://www.npmjs.com/package/@liangzhengtao/agent-trace)
+[![npm](https://img.shields.io/npm/dt/@liangzhengtao/agent-trace.svg)](https://www.npmjs.com/package/@liangzhengtao/agent-trace)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![GitHub Stars](https://img.shields.io/github/stars/Serennity007/agent-trace.svg)](https://github.com/Serennity007/agent-trace)
 
@@ -38,7 +38,7 @@ AIコーディングエージェントは何時間も稼働し続けます。ツ
 ## 解決策
 
 ```bash
-npx agent-trace
+npx @liangzhengtao/agent-trace
 ```
 
 **コマンド一つ。APIキー不要。クラウドサービス不要。すべてローカルで実行。**
@@ -191,7 +191,7 @@ agent-trace -a codex         # Codex のみ分析
 # GitHub Actions - エージェントコストの確認
 - name: Check agent costs
   run: |
-    npx agent-trace --json > trace.json
+    npx @liangzhengtao/agent-trace --json > trace.json
     COST=$(jq '.costBreakdown.total.cost' trace.json)
     if (( $(echo "$COST > 10" | bc -l) )); then
       echo "エージェントコストが高すぎます: $COST"

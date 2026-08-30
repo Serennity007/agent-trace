@@ -16,7 +16,7 @@
   <text x="870" y="26" text-anchor="end" font-family="JetBrains Mono, Consolas, Courier New, monospace" font-size="12" fill="#5d6b82">zhengtao@dev — npx agent-trace</text>
   <line x1="16" y1="42" x2="884" y2="42" stroke="#ffffff" stroke-opacity="0.08"/>
   <g font-family="JetBrains Mono, Consolas, Courier New, monospace" font-size="14">
-    <text x="26" y="56" opacity="0"><tspan fill="#00d4ff">$ </tspan><tspan fill="#e8eaf6" font-weight="600">npx agent-trace</tspan><animate attributeName="opacity" values="0;1" begin="0.20s" dur="0.18s" fill="freeze"/></text>
+    <text x="26" y="56" opacity="0"><tspan fill="#00d4ff">$ </tspan><tspan fill="#e8eaf6" font-weight="600">npx @liangzhengtao/agent-trace</tspan><animate attributeName="opacity" values="0;1" begin="0.20s" dur="0.18s" fill="freeze"/></text>
     <text x="26" y="98" opacity="0"><tspan fill="#00d4ff">▸ </tspan><tspan fill="#00d4ff" font-weight="600">agent-trace</tspan><tspan fill="#8b95a7"> — AI Agent Trajectory Analyzer</tspan><animate attributeName="opacity" values="0;1" begin="0.66s" dur="0.18s" fill="freeze"/></text>
     <text x="26" y="119" opacity="0"><tspan fill="#3fb950">✓ </tspan><tspan fill="#8b95a7">Found 9 session(s) with content</tspan><animate attributeName="opacity" values="0;1" begin="0.96s" dur="0.18s" fill="freeze"/></text>
     <text x="26" y="161" opacity="0"><tspan fill="#8b5cf6" font-weight="600">▍Summary</tspan><animate attributeName="opacity" values="0;1" begin="1.42s" dur="0.18s" fill="freeze"/></text>
