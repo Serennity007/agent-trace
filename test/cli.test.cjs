@@ -9,16 +9,16 @@ const demo = JSON.parse(fs.readFileSync(path.join(root, 'examples/session-demo/s
 function run(dir, ...args) {
   return spawnSync(process.execPath, [path.join(root, 'bin/cli.js'), dir, '-a', 'opencode', '--json', ...args], { encoding: 'utf8' });
 }
-function folder(t) {
+function withFolder(fn) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'agent-trace-cli-'));
-  t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
-  return dir;
+  try { return fn(dir); }
+  finally { fs.rmSync(dir, { recursive: true, force: true }); }
 }
-test('explicit empty directory yields JSON without discovering personal logs', t => {
-  const result = run(folder(t));
+test('explicit empty directory yields JSON without discovering personal logs', () => withFolder(dir => {
+  const result = run(dir);
   assert.equal(result.status, 0, result.stderr);
   assert.deepEqual(JSON.parse(result.stdout), []);
-});
+}));
 test('synthetic first run retains the single-session JSON contract', () => {
   const result = run(path.join(root, 'examples/session-demo'));
   assert.equal(result.status, 0, result.stderr);
@@ -29,8 +29,7 @@ test('synthetic first run retains the single-session JSON contract', () => {
   assert.equal(report.costBreakdown.output.tokens, 50);
   assert.ok(report.costBreakdown.total.cost > 0);
 });
-test('multiple sessions produce one JSON array and selection still works', t => {
-  const dir = folder(t);
+test('multiple sessions produce one JSON array and selection still works', () => withFolder(dir => {
   for (const id of ['fixture-one', 'fixture-two']) fs.writeFileSync(path.join(dir, `${id}.json`), JSON.stringify({ ...demo, id }));
   const multiple = run(dir);
   assert.equal(multiple.status, 0, multiple.stderr);
@@ -38,10 +37,10 @@ test('multiple sessions produce one JSON array and selection still works', t => 
   const single = run(dir, '-s', 'fixture-two');
   assert.equal(single.status, 0, single.stderr);
   assert.equal(JSON.parse(single.stdout).session, 'fixture-two');
-});
-test('missing sessions and invalid directories fail without a success document', t => {
-  for (const result of [run(folder(t), '-s', 'missing'), run(path.join(folder(t), 'missing'))]) {
+}));
+test('missing sessions and invalid directories fail without a success document', () => withFolder(dir => {
+  for (const result of [run(dir, '-s', 'missing'), run(path.join(dir, 'missing'))]) {
     assert.notEqual(result.status, 0);
     assert.equal(result.stdout, '');
   }
-});
+}));
