@@ -49,7 +49,7 @@ npx @liangzhengtao/agent-trace
 
 ```bash
 # 설치
-npm install -g agent-trace
+npm install -g @liangzhengtao/agent-trace
 
 # 자동 감지 및 모든 세션 분석
 agent-trace

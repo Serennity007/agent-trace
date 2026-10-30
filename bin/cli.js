@@ -3,6 +3,7 @@
 'use strict';
 
 const path = require('path');
+const fs = require('fs');
 const { program } = require('commander');
 const chalk = require('chalk');
 const { OpenCodeParser } = require('../src/parsers/opencode');
@@ -73,10 +74,15 @@ if (opts.listAgents) {
 }
 
 async function main() {
-  console.log('');
-  console.log(chalk.bold.cyan('  🔍 agent-trace — AI Agent Trajectory Analyzer'));
-  console.log(chalk.gray('  ─────────────────────────────────────────────────'));
-  console.log('');
+  if (program.args.length && !fs.statSync(path.resolve(program.args[0])).isDirectory()) {
+    throw new Error('Session input must be a directory');
+  }
+  if (!opts.json) {
+    console.log('');
+    console.log(chalk.bold.cyan('  🔍 agent-trace — AI Agent Trajectory Analyzer'));
+    console.log(chalk.gray('  ─────────────────────────────────────────────────'));
+    console.log('');
+  }
 
   // Determine which parsers to use
   let parsers = [];
@@ -90,13 +96,12 @@ async function main() {
   } else {
     const agentConfig = AGENTS[opts.agent];
     if (!agentConfig) {
-      console.log(chalk.red(`  ✗ Unknown agent: ${opts.agent}`));
-      console.log(chalk.gray(`  Available: ${Object.keys(AGENTS).join(', ')}`));
+      console.error(chalk.red(`  ✗ Unknown agent: ${opts.agent}`));
+      console.error(chalk.gray(`  Available: ${Object.keys(AGENTS).join(', ')}`));
       process.exit(1);
     }
     if (!agentConfig.parser) {
-      console.log(chalk.yellow(`  ⚠️  ${opts.agent} support coming soon.`));
-      process.exit(0);
+      throw new Error(`${opts.agent} support coming soon.`);
     }
     parsers.push({ name: opts.agent, parser: new agentConfig.parser() });
   }
@@ -104,6 +109,8 @@ async function main() {
   // Find sessions from all parsers
   let allSessions = [];
   for (const { name, parser } of parsers) {
+    // Explicit input must never fall back to personal log discovery.
+    if (program.args.length) parser.sessionPaths = [path.resolve(program.args[0])];
     const sessions = parser.findSessions();
     for (const session of sessions) {
       allSessions.push({ ...session, agentName: name, parser });
@@ -111,6 +118,8 @@ async function main() {
   }
 
   if (allSessions.length === 0) {
+    if (opts.session) throw new Error(`Session not found: ${opts.session}`);
+    if (opts.json) { console.log('[]'); return; }
     console.log(chalk.yellow('  No sessions found.'));
     console.log(chalk.gray('  Make sure your AI agent has run at least once.'));
     process.exit(0);
@@ -123,19 +132,23 @@ async function main() {
   }
 
   if (allSessions.length === 0) {
+    if (opts.session) throw new Error(`Session not found: ${opts.session}`);
+    if (opts.json) { console.log('[]'); return; }
     console.log(chalk.yellow(`  No sessions with content found (${totalFound} empty sessions filtered).`));
     console.log(chalk.gray('  Use --all to show all sessions.'));
     process.exit(0);
   }
 
-  console.log(chalk.green(`  ✓ Found ${allSessions.length} session(s) with content (${totalFound} total)`));
-  console.log('');
+  if (!opts.json) {
+    console.log(chalk.green(`  ✓ Found ${allSessions.length} session(s) with content (${totalFound} total)`));
+    console.log('');
+  }
 
   // Filter by session ID if specified
   if (opts.session) {
     allSessions = allSessions.filter(s => s.id === opts.session);
     if (allSessions.length === 0) {
-      console.log(chalk.red(`  ✗ Session not found: ${opts.session}`));
+      console.error(chalk.red(`  ✗ Session not found: ${opts.session}`));
       process.exit(1);
     }
   }
@@ -153,12 +166,28 @@ async function main() {
       parsed.agentName = session.agentName;
       parsedSessions.push(parsed);
     } catch (err) {
-      console.log(chalk.yellow(`  ⚠️  Error parsing session ${session.id}: ${err.message}`));
+      console.error(chalk.yellow(`  ⚠️  Error parsing session ${session.id}: ${err.message}`));
+      process.exitCode = 1;
     }
   }
 
   // Sort by cost descending
   parsedSessions.sort((a, b) => b.cost - a.cost);
+
+  if (opts.json) {
+    const reports = parsedSessions.map(parsed => ({
+      agent: parsed.agentName,
+      session: parsed.id,
+      stats: SessionAnalyzer.getStats(parsed),
+      costBreakdown: SessionAnalyzer.getCostBreakdown(parsed),
+      toolUsage: SessionAnalyzer.getToolUsage(parsed.toolCalls),
+      anomalies: SessionAnalyzer.detectAnomalies(parsed),
+      timeline: opts.verbose && parsed.agentName === 'kimi-code'
+        ? new KimiCodeParser().getTimeline(parsed.messages) : undefined,
+    }));
+    console.log(JSON.stringify(reports.length === 1 ? reports[0] : reports, null, 2));
+    return;
+  }
 
   // Summary view for multiple sessions
   if (parsedSessions.length > 1 && !opts.session) {
@@ -254,32 +283,15 @@ async function main() {
     // Single session or specific session requested
     for (const parsed of parsedSessions) {
       try {
-        if (opts.json) {
-          const stats = SessionAnalyzer.getStats(parsed);
-          const costBreakdown = SessionAnalyzer.getCostBreakdown(parsed);
-          const toolUsage = SessionAnalyzer.getToolUsage(parsed.toolCalls);
-          const anomalies = SessionAnalyzer.detectAnomalies(parsed);
-          const timeline = [];
-          console.log(JSON.stringify({
-            agent: parsed.agentName,
-            session: parsed.id,
-            stats,
-            costBreakdown,
-            toolUsage,
-            anomalies,
-            timeline: opts.verbose ? timeline : undefined,
-          }, null, 2));
-        } else {
-          console.log(chalk.bold(`  Agent: ${parsed.agentName}`));
-          const stats = SessionAnalyzer.getStats(parsed);
-          const costBreakdown = SessionAnalyzer.getCostBreakdown(parsed);
-          const toolUsage = SessionAnalyzer.getToolUsage(parsed.toolCalls);
-          const anomalies = SessionAnalyzer.detectAnomalies(parsed);
-          const timeline = parsed.agentName === 'kimi-code'
-            ? new KimiCodeParser().getTimeline(parsed.messages)
-            : [];
-          Reporter.display(parsed, stats, costBreakdown, toolUsage, anomalies, timeline);
-        }
+        console.log(chalk.bold(`  Agent: ${parsed.agentName}`));
+        const stats = SessionAnalyzer.getStats(parsed);
+        const costBreakdown = SessionAnalyzer.getCostBreakdown(parsed);
+        const toolUsage = SessionAnalyzer.getToolUsage(parsed.toolCalls);
+        const anomalies = SessionAnalyzer.detectAnomalies(parsed);
+        const timeline = parsed.agentName === 'kimi-code'
+          ? new KimiCodeParser().getTimeline(parsed.messages)
+          : [];
+        Reporter.display(parsed, stats, costBreakdown, toolUsage, anomalies, timeline);
       } catch (err) {
         console.log(chalk.yellow(`  ⚠️  Error displaying session ${parsed.id}: ${err.message}`));
       }

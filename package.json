@@ -1,5 +1,5 @@
 {
-  "name": "agent-trace",
+  "name": "@liangzhengtao/agent-trace",
   "version": "1.0.3",
   "description": "Trace your AI coding agent - costs, tokens, tool health, session timeline",
   "main": "src/index.js",
@@ -9,7 +9,7 @@
   },
   "scripts": {
     "start": "node bin/cli.js",
-    "test": "node test/test.js"
+    "test": "node test/test.js && node --test test/cli.test.cjs"
   },
   "keywords": [
     "ai",
@@ -30,13 +30,16 @@
     "url": "git+https://github.com/Serennity007/agent-trace.git"
   },
   "engines": {
-    "node": ">=16.0.0"
+    "node": ">=18.0.0"
   },
   "files": [
     "bin/",
     "src/",
     "LICENSE",
-    "README.md"
+    "README.md",
+    "examples/",
+    "docs/",
+    "CHANGELOG.md"
   ],
   "dependencies": {
     "chalk": "^4.1.2",

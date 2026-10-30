@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased · 2026-10-30
+
+- Honor explicit session directories instead of discovering personal log locations.
+- Emit one parseable JSON document for zero, one or multiple sessions; diagnostics use stderr. Preserve the single-session report object, using arrays for zero/multiple reports.
+- Fail for unsupported agents, invalid directories and absent explicitly selected sessions.
+- Add a synthetic first-run fixture and four actual CLI integration checks.
+- Align install commands, package/lock metadata and the Node.js 18+ requirement with the scoped package. Version remains 1.0.3; these source fixes are not published to npm.
+
 ## [1.0.3] - 2026-08-30
 
 ### Fixed

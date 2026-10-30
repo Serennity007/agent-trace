@@ -47,7 +47,7 @@ npx @liangzhengtao/agent-trace
 
 ```bash
 # 安装
-npm install -g agent-trace
+npm install -g @liangzhengtao/agent-trace
 
 # 自动检测并分析所有会话
 agent-trace
@@ -230,3 +230,5 @@ agent-trace -a codex         # 只分析 Codex
 ## English Version
 
 [README.md](README.md)
+
+[First run with synthetic logs / 合成日志首次运行](docs/first-run.md) · [Unreleased source fixes / 源码变更](CHANGELOG.md)

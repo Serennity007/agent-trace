@@ -1,0 +1,7 @@
+{
+  "id": "synthetic-demo",
+  "messages": [
+    {"role": "user", "content": "Synthetic fixture: inspect an example file.", "timestamp": "2026-01-01T00:00:00Z"},
+    {"role": "assistant", "content": "Synthetic fixture: inspection complete.", "timestamp": "2026-01-01T00:00:02Z", "usage": {"input_tokens": 100, "output_tokens": 50}, "tool_calls": [{"name": "read_file", "success": true}]}
+  ]
+}

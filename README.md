@@ -92,7 +92,7 @@ npx @liangzhengtao/agent-trace
 
 ```bash
 # Install
-npm install -g agent-trace
+npm install -g @liangzhengtao/agent-trace
 
 # Auto-detect and analyze all sessions
 agent-trace
@@ -326,3 +326,5 @@ Other tools by [Serennity007](https://github.com/Serennity007):
 <p align="center">
   <sub>⭐ Star this repo if <strong>Agent Trace</strong> helped you observe your AI agents!</sub>
 </p>
+
+[First run with synthetic logs / 合成日志首次运行](docs/first-run.md) · [Unreleased source fixes / 源码变更](CHANGELOG.md)
