@@ -1,6 +1,13 @@
 const fs = require('fs');
 const path = require('path');
 
+// Older logs report cache creation as a total, newer ones split it per TTL.
+function cacheCreationTokens(value) {
+  if (!value) return 0;
+  if (typeof value === 'number') return value;
+  return (value.ephemeral_5m_input_tokens || 0) + (value.ephemeral_1h_input_tokens || 0);
+}
+
 /**
  * Parse Claude Code session logs
  * Sessions are .jsonl files in ~/.claude/projects/<project>/
@@ -65,11 +72,15 @@ class ClaudeCodeParser {
       duration: 0,
       messages: [],
       toolCalls: [],
-      totalTokens: { input: 0, output: 0 },
+      totalTokens: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
       cost: 0,
       errors: [],
       retries: 0,
     };
+
+    // Claude Code splits one assistant response across several jsonl lines that
+    // share a message id and repeat its usage object; count each id only once.
+    const countedMessageIds = new Set();
 
     try {
       const content = fs.readFileSync(filePath, 'utf-8');
@@ -131,10 +142,13 @@ class ClaudeCodeParser {
               }
             }
 
-            // Track tokens from message.usage
-            if (msg.usage) {
+            // Track tokens from message.usage, once per assistant response
+            if (msg.usage && !(msg.id && countedMessageIds.has(msg.id))) {
+              if (msg.id) countedMessageIds.add(msg.id);
               parsed.totalTokens.input += msg.usage.input_tokens || 0;
               parsed.totalTokens.output += msg.usage.output_tokens || 0;
+              parsed.totalTokens.cacheRead += msg.usage.cache_read_input_tokens || 0;
+              parsed.totalTokens.cacheWrite += cacheCreationTokens(msg.usage.cache_creation_input_tokens);
             }
 
             if (textContent.trim()) {
@@ -179,7 +193,10 @@ class ClaudeCodeParser {
     }
 
     // Estimate cost (Claude pricing)
-    parsed.cost = (parsed.totalTokens.input * 3 + parsed.totalTokens.output * 15) / 1000000;
+    parsed.cost = (parsed.totalTokens.input * 3 +
+      parsed.totalTokens.output * 15 +
+      parsed.totalTokens.cacheRead * 0.3 +
+      parsed.totalTokens.cacheWrite * 3.75) / 1000000;
 
     return parsed;
   }

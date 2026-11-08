@@ -25,15 +25,35 @@ class SessionAnalyzer {
   }
 
   /**
+   * Total tokens across base and cache buckets
+   */
+  static getTokenTotal(totalTokens) {
+    return (totalTokens.input || 0) + (totalTokens.output || 0)
+      + (totalTokens.cacheRead || 0) + (totalTokens.cacheWrite || 0);
+  }
+
+  /**
    * Analyze cost breakdown
    */
   static getCostBreakdown(parsed) {
-    const inputCost = (parsed.totalTokens.input * 3) / 1000000;
-    const outputCost = (parsed.totalTokens.output * 15) / 1000000;
+    const tokens = parsed.totalTokens;
+    const cacheRead = tokens.cacheRead || 0;
+    const cacheWrite = tokens.cacheWrite || 0;
+    const inputCost = (tokens.input * 3) / 1000000;
+    const outputCost = (tokens.output * 15) / 1000000;
+    const cacheReadCost = (cacheRead * 0.3) / 1000000;
+    const cacheWriteCost = (cacheWrite * 3.75) / 1000000;
     return {
-      input: { tokens: parsed.totalTokens.input, cost: inputCost },
-      output: { tokens: parsed.totalTokens.output, cost: outputCost },
-      total: { tokens: parsed.totalTokens.input + parsed.totalTokens.output, cost: inputCost + outputCost },
+      input: { tokens: tokens.input, cost: inputCost },
+      output: { tokens: tokens.output, cost: outputCost },
+      cache: {
+        read: { tokens: cacheRead, cost: cacheReadCost },
+        write: { tokens: cacheWrite, cost: cacheWriteCost },
+      },
+      total: {
+        tokens: SessionAnalyzer.getTokenTotal(tokens),
+        cost: inputCost + outputCost + cacheReadCost + cacheWriteCost,
+      },
     };
   }
 

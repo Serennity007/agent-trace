@@ -34,9 +34,14 @@ class Reporter {
     ]);
 
     // Cost Analysis
+    const cache = costBreakdown.cache;
+    const cacheLine = cache && (cache.read.tokens || cache.write.tokens)
+      ? [`Cache Tokens:  read ${chalk.bold(cache.read.tokens.toLocaleString())} ${chalk.gray(`($${cache.read.cost.toFixed(4)})`)} / write ${chalk.bold(cache.write.tokens.toLocaleString())} ${chalk.gray(`($${cache.write.cost.toFixed(4)})`)}`]
+      : [];
     this.section('💰 Cost Analysis', [
       `Input Tokens:  ${chalk.bold(costBreakdown.input.tokens.toLocaleString())}  ${chalk.gray(`($${costBreakdown.input.cost.toFixed(4)})`)}`,
       `Output Tokens: ${chalk.bold(costBreakdown.output.tokens.toLocaleString())}  ${chalk.gray(`($${costBreakdown.output.cost.toFixed(4)})`)}`,
+      ...cacheLine,
       `Total Tokens:  ${chalk.bold(costBreakdown.total.tokens.toLocaleString())}`,
       `Estimated Cost: ${chalk.bold.green(`$${costBreakdown.total.cost.toFixed(4)}`)}`,
     ]);

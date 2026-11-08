@@ -199,7 +199,7 @@ async function main() {
 
     // Calculate totals
     let totalCost = 0;
-    let totalTokens = { input: 0, output: 0 };
+    let totalTokens = { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 };
     let totalMessages = 0;
     let totalToolCalls = 0;
     let totalDuration = 0;
@@ -208,6 +208,8 @@ async function main() {
       totalCost += parsed.cost;
       totalTokens.input += parsed.totalTokens.input;
       totalTokens.output += parsed.totalTokens.output;
+      totalTokens.cacheRead += parsed.totalTokens.cacheRead || 0;
+      totalTokens.cacheWrite += parsed.totalTokens.cacheWrite || 0;
       totalMessages += parsed.messages.length;
       totalToolCalls += parsed.toolCalls.length;
       totalDuration += parsed.duration;
@@ -215,7 +217,7 @@ async function main() {
 
     console.log(`  Sessions:      ${chalk.bold(parsedSessions.length)}`);
     console.log(`  Total Cost:    ${chalk.bold.green(`$${totalCost.toFixed(4)}`)}`);
-    console.log(`  Total Tokens:  ${chalk.bold((totalTokens.input + totalTokens.output).toLocaleString())}`);
+    console.log(`  Total Tokens:  ${chalk.bold(SessionAnalyzer.getTokenTotal(totalTokens).toLocaleString())}`);
     console.log(`  Total Messages: ${chalk.bold(totalMessages)}`);
     console.log(`  Total Tools:   ${chalk.bold(totalToolCalls)}`);
     console.log(`  Total Time:    ${chalk.bold(Reporter.formatDuration(totalDuration))}`);
@@ -235,7 +237,7 @@ async function main() {
       const rank = String(i + 1).padStart(4);
       const id = p.id.substring(0, 36).padEnd(36);
       const cost = `$${p.cost.toFixed(4)}`.padStart(8);
-      const tokens = (p.totalTokens.input + p.totalTokens.output).toLocaleString().padStart(8);
+      const tokens = SessionAnalyzer.getTokenTotal(p.totalTokens).toLocaleString().padStart(8);
       const msgs = String(p.messages.length).padStart(8);
       console.log(`  ${rank}  ${chalk.cyan(id)}  ${chalk.green(cost)}  ${tokens}  ${msgs}`);
     }

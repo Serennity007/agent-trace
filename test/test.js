@@ -1,7 +1,29 @@
 const assert = require('assert');
+const fs = require('fs');
+const os = require('os');
 const path = require('path');
 const { OpenCodeParser } = require('../src/parsers/opencode');
+const { ClaudeCodeParser } = require('../src/parsers/claude-code');
 const { SessionAnalyzer } = require('../src/analyzers/session');
+
+function withClaudeLog(lines, fn) {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'agent-trace-claude-'));
+  const file = path.join(dir, 'session.jsonl');
+  try {
+    fs.writeFileSync(file, lines.join('\n') + '\n', 'utf-8');
+    return fn(new ClaudeCodeParser().parseSession(file));
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+}
+
+function claudeEntry(id, content, usage, timestamp) {
+  return JSON.stringify({
+    type: 'assistant',
+    timestamp,
+    message: { id, role: 'assistant', content, usage },
+  });
+}
 
 async function runTests() {
   let passed = 0;
@@ -91,6 +113,69 @@ async function runTests() {
     };
     const parsed = parser.parseSession(data);
     assert.strictEqual(parsed.duration, 300); // 5 minutes
+  });
+
+  // Claude Code parser: one response spread over several log entries
+  console.log('\n📋 Claude Code Parser:');
+  const splitResponse = [
+    JSON.stringify({ type: 'user', timestamp: '2026-01-01T00:00:00Z', message: { role: 'user', content: 'hello' } }),
+    claudeEntry('msg_1', [{ type: 'text', text: 'thinking out loud' }], {
+      input_tokens: 1000, output_tokens: 200,
+      cache_read_input_tokens: 5000,
+      cache_creation_input_tokens: { ephemeral_5m_input_tokens: 300, ephemeral_1h_input_tokens: 0 },
+    }, '2026-01-01T00:00:01Z'),
+    claudeEntry('msg_1', [{ type: 'tool_use', name: 'Bash', input: { command: 'ls' } }], {
+      input_tokens: 1000, output_tokens: 200,
+      cache_read_input_tokens: 5000,
+      cache_creation_input_tokens: { ephemeral_5m_input_tokens: 300, ephemeral_1h_input_tokens: 0 },
+    }, '2026-01-01T00:00:02Z'),
+    claudeEntry('msg_2', [{ type: 'text', text: 'done' }], {
+      input_tokens: 500, output_tokens: 100,
+      cache_read_input_tokens: 1500, cache_creation_input_tokens: 100,
+    }, '2026-01-01T00:00:03Z'),
+  ];
+
+  test('counts usage once when a response spans several entries', () => {
+    withClaudeLog(splitResponse, parsed => {
+      assert.strictEqual(parsed.totalTokens.input, 1500);
+      assert.strictEqual(parsed.totalTokens.output, 300);
+    });
+  });
+
+  test('keeps every tool call from a split response', () => {
+    withClaudeLog(splitResponse, parsed => {
+      assert.strictEqual(parsed.toolCalls.length, 1);
+      assert.strictEqual(parsed.toolCalls[0].name, 'Bash');
+      assert.strictEqual(parsed.messages.filter(m => m.role === 'assistant').length, 2);
+    });
+  });
+
+  test('tracks cache read and cache creation tokens', () => {
+    withClaudeLog(splitResponse, parsed => {
+      assert.strictEqual(parsed.totalTokens.cacheRead, 6500);
+      assert.strictEqual(parsed.totalTokens.cacheWrite, 400);
+      assert.ok(Math.abs(parsed.cost - 0.01245) < 1e-9, `cost was ${parsed.cost}`);
+    });
+  });
+
+  test('still counts usage when entries carry no message id', () => {
+    withClaudeLog([
+      claudeEntry(undefined, [{ type: 'text', text: 'a' }], { input_tokens: 40, output_tokens: 5 }, '2026-01-01T00:00:01Z'),
+      claudeEntry(undefined, [{ type: 'text', text: 'b' }], { input_tokens: 60, output_tokens: 7 }, '2026-01-01T00:00:02Z'),
+    ], parsed => {
+      assert.strictEqual(parsed.totalTokens.input, 100);
+      assert.strictEqual(parsed.totalTokens.output, 12);
+    });
+  });
+
+  test('getCostBreakdown folds cache buckets into the total', () => {
+    const breakdown = SessionAnalyzer.getCostBreakdown({
+      totalTokens: { input: 1000, output: 500, cacheRead: 2000, cacheWrite: 100 },
+    });
+    assert.strictEqual(breakdown.cache.read.tokens, 2000);
+    assert.strictEqual(breakdown.total.tokens, 3600);
+    assert.ok(Math.abs(breakdown.total.cost - (breakdown.input.cost + breakdown.output.cost
+      + breakdown.cache.read.cost + breakdown.cache.write.cost)) < 1e-12);
   });
 
   // Analyzer tests
