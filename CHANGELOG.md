@@ -1,12 +1,12 @@
 # Changelog
 
-## Unreleased · 2026-10-30
+## [1.0.4] - 2026-11-24
 
 - Honor explicit session directories instead of discovering personal log locations.
 - Emit one parseable JSON document for zero, one or multiple sessions; diagnostics use stderr. Preserve the single-session report object, using arrays for zero/multiple reports.
 - Fail for unsupported agents, invalid directories and absent explicitly selected sessions.
 - Add a synthetic first-run fixture and four actual CLI integration checks.
-- Align install commands, package/lock metadata and the Node.js 18+ requirement with the scoped package. Version remains 1.0.3; these source fixes are not published to npm.
+- Align install commands, package/lock metadata and the Node.js 18+ requirement with the scoped package.
 - Claude Code parser: a response split across several jsonl entries shared one message id and repeated its usage object, so tokens and estimated cost were counted once per entry. Usage is now counted once per message id (reported by @mattabate in issue #1).
 - Claude Code parser: `cache_read_input_tokens` and `cache_creation_input_tokens` are now collected and priced in the cost analysis instead of being ignored.
 
