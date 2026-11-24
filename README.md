@@ -259,6 +259,10 @@ agent-trace -a codex         # Only analyze Codex
 5. **Detects anomalies** — High retries, failures, costs
 6. **Generates report** — Terminal output or JSON
 
+### Why token totals can differ from `/cost`
+
+Claude Code can write one assistant response across several JSONL entries that share a `message.id` and repeat the same `usage` object. Counting usage per entry inflates totals for tool-using sessions; v1.0.4 counts usage once per message id and prices cache read/write tokens as separate buckets. The investigation, a four-line fixture that reproduces the old `2500/500` vs fixed `1500/300` totals, and the fix are written up in [this public gist](https://gist.github.com/Serennity007/f9db445d4b6b2d913a5b7a64b8fe68bc).
+
 ---
 
 ## 🔒 Privacy

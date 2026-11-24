@@ -208,6 +208,10 @@ agent-trace -a codex         # 只分析 Codex
 5. **检测异常** — 高重试、高失败率、高成本
 6. **生成报告** — 终端输出或 JSON
 
+### 为什么 Token 统计可能与 `/cost` 不同
+
+Claude Code 可能把一次 assistant 响应写成多行 JSONL：它们共享同一个 `message.id`，并重复携带同一个 `usage` 对象。如果按行累加 usage，带工具调用的会话就会被重复计数。v1.0.4 改为每个 message id 只统计一次，并把缓存读/写 Token 单独分桶计价。完整排查、可复现的四行 fixture（旧版 `2500/500` vs 修复后 `1500/300`）和修复方法写在[这篇公开笔记](https://gist.github.com/Serennity007/f9db445d4b6b2d913a5b7a64b8fe68bc)。
+
 ## 隐私
 
 - ✅ 100% 本地运行 — 数据不会离开你的电脑
