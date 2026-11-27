@@ -299,6 +299,19 @@ async function runTests() {
     });
   });
 
+  // Package entry point
+  console.log('\n📋 Package Entry Point:');
+  test('require("..") resolves the declared library entry point', () => {
+    const api = require('..');
+    assert.strictEqual(typeof api.OpenCodeParser, 'function');
+    assert.strictEqual(typeof api.ClaudeCodeParser, 'function');
+    assert.strictEqual(typeof api.KimiCodeParser, 'function');
+    assert.strictEqual(typeof api.CodexParser, 'function');
+    assert.strictEqual(typeof api.SessionAnalyzer, 'function');
+    assert.strictEqual(typeof api.Reporter, 'function');
+    assert.strictEqual(new api.KimiCodeParser().name, 'Kimi Code');
+  });
+
   // Analyzer tests
   console.log('\n📋 Session Analyzer:');
   test('getStats counts messages correctly', () => {
