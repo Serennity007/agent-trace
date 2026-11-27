@@ -4,6 +4,7 @@ const os = require('os');
 const path = require('path');
 const { OpenCodeParser } = require('../src/parsers/opencode');
 const { ClaudeCodeParser } = require('../src/parsers/claude-code');
+const { KimiCodeParser } = require('../src/parsers/kimi-code');
 const { SessionAnalyzer } = require('../src/analyzers/session');
 
 function withClaudeLog(lines, fn) {
@@ -23,6 +24,27 @@ function claudeEntry(id, content, usage, timestamp) {
     timestamp,
     message: { id, role: 'assistant', content, usage },
   });
+}
+
+function withKimiSession(wireFiles, fn) {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'agent-trace-kimi-'));
+  try {
+    const sessionDir = path.join(dir, 'workspace', 'session-1');
+    fs.mkdirSync(path.join(sessionDir, 'agents', 'main'), { recursive: true });
+    fs.writeFileSync(path.join(sessionDir, 'state.json'), JSON.stringify({
+      createdAt: '2026-01-01T00:00:00Z',
+      updatedAt: '2026-01-01T00:00:10Z',
+    }), 'utf-8');
+    for (const [agent, entries] of Object.entries(wireFiles)) {
+      const agentDir = path.join(sessionDir, 'agents', agent);
+      fs.mkdirSync(agentDir, { recursive: true });
+      const lines = entries.map(entry => JSON.stringify(entry));
+      fs.writeFileSync(path.join(agentDir, 'wire.jsonl'), lines.join('\n') + (lines.length ? '\n' : ''), 'utf-8');
+    }
+    return fn(dir);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
 }
 
 async function runTests() {
@@ -176,6 +198,49 @@ async function runTests() {
     assert.strictEqual(breakdown.total.tokens, 3600);
     assert.ok(Math.abs(breakdown.total.cost - (breakdown.input.cost + breakdown.output.cost
       + breakdown.cache.read.cost + breakdown.cache.write.cost)) < 1e-12);
+  });
+
+  // Kimi Code parser: four usage buckets across every agent wire log
+  console.log('\n📋 Kimi Code Parser:');
+  const kimiUsage = (usage, time) => ({ type: 'usage.record', time, usage });
+
+  test('sums cache buckets from main and subagent wire logs', () => {
+    withKimiSession({
+      main: [kimiUsage({ inputOther: 1000, output: 500, inputCacheRead: 200, inputCacheCreation: 300 }, '2026-01-01T00:00:05Z')],
+      'sub-agent': [kimiUsage({ inputOther: 200, output: 100 }, '2026-01-01T00:00:06Z')],
+    }, dir => {
+      const parser = new KimiCodeParser();
+      parser.sessionPaths = [dir];
+      const sessions = parser.findSessions();
+      assert.strictEqual(sessions.length, 1);
+      assert.strictEqual(sessions[0].hasContent, true);
+
+      const parsed = parser.parseSession(sessions[0]);
+      assert.deepStrictEqual(parsed.totalTokens, { input: 1200, output: 600, cacheRead: 200, cacheWrite: 300 });
+      assert.strictEqual(SessionAnalyzer.getTokenTotal(parsed.totalTokens), 2300);
+
+      const breakdown = SessionAnalyzer.getCostBreakdown(parsed);
+      assert.strictEqual(breakdown.cache.read.tokens, 200);
+      assert.strictEqual(breakdown.cache.write.tokens, 300);
+      assert.strictEqual(breakdown.total.tokens, 2300);
+      // Kimi rates: input $2/MTok, output $10/MTok, cache read $0.30/MTok, write $3.75/MTok.
+      assert.ok(Math.abs(parsed.cost - 0.009585) < 1e-12, `cost was ${parsed.cost}`);
+    });
+  });
+
+  test('finds a session whose only content is a subagent wire log', () => {
+    withKimiSession({
+      main: [],
+      'sub-agent': [kimiUsage({ inputOther: 200, output: 100 }, '2026-01-01T00:00:06Z')],
+    }, dir => {
+      const parser = new KimiCodeParser();
+      parser.sessionPaths = [dir];
+      const sessions = parser.findSessions();
+      assert.strictEqual(sessions.length, 1);
+      assert.strictEqual(sessions[0].hasContent, true);
+      const parsed = parser.parseSession(sessions[0]);
+      assert.deepStrictEqual(parsed.totalTokens, { input: 200, output: 100, cacheRead: 0, cacheWrite: 0 });
+    });
   });
 
   // Analyzer tests
