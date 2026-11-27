@@ -33,7 +33,7 @@ program
   .argument('[directory]', 'Session directory to analyze', '.')
   .option('-s, --session <id>', 'Analyze specific session ID')
   .option('-j, --json', 'Output as JSON')
-  .option('-v, --verbose', 'Show detailed timeline')
+  .option('-v, --verbose', 'Show detailed conversation timeline and active periods')
   .option('-a, --agent <type>', 'Agent type (opencode, claude-code, kimi-code, codex)', 'auto')
   .option('--list-agents', 'List supported agents')
   .option('-n, --top <count>', 'Show top N sessions by cost', '5')
@@ -46,6 +46,7 @@ ${chalk.bold('Examples:')}
   $ ${chalk.cyan('agent-trace -a opencode')}             # Analyze OpenCode sessions
   $ ${chalk.cyan('agent-trace -a codex')}                # Analyze Codex sessions
   $ ${chalk.cyan('agent-trace --json')}                  # Output as JSON
+  $ ${chalk.cyan('agent-trace -v')}                      # Show conversation timeline and active periods
   $ ${chalk.cyan('agent-trace -s session-id')}           # Analyze specific session
   $ ${chalk.cyan('agent-trace -n 10')}                   # Show top 10 sessions
 
@@ -164,6 +165,8 @@ async function main() {
         parsed = session.parser.parseSession(session);
       }
       parsed.agentName = session.agentName;
+      // Keep the parser around so the timeline can be built for every agent.
+      parsed.parser = session.parser;
       parsedSessions.push(parsed);
     } catch (err) {
       console.error(chalk.yellow(`  ⚠️  Error parsing session ${session.id}: ${err.message}`));
@@ -182,8 +185,8 @@ async function main() {
       costBreakdown: SessionAnalyzer.getCostBreakdown(parsed),
       toolUsage: SessionAnalyzer.getToolUsage(parsed.toolCalls),
       anomalies: SessionAnalyzer.detectAnomalies(parsed),
-      timeline: opts.verbose && parsed.agentName === 'kimi-code'
-        ? new KimiCodeParser().getTimeline(parsed.messages) : undefined,
+      timeline: opts.verbose
+        ? parsed.parser.getTimeline(parsed.messages) : undefined,
     }));
     console.log(JSON.stringify(reports.length === 1 ? reports[0] : reports, null, 2));
     return;
@@ -252,9 +255,7 @@ async function main() {
       const costBreakdown = SessionAnalyzer.getCostBreakdown(top);
       const toolUsage = SessionAnalyzer.getToolUsage(top.toolCalls);
       const anomalies = SessionAnalyzer.detectAnomalies(top);
-      const timeline = top.agentName === 'kimi-code'
-        ? new KimiCodeParser().getTimeline(top.messages)
-        : [];
+      const timeline = opts.verbose ? top.parser.getTimeline(top.messages) : [];
       Reporter.display(top, stats, costBreakdown, toolUsage, anomalies, timeline);
     }
 
@@ -272,9 +273,7 @@ async function main() {
       const costBreakdown = SessionAnalyzer.getCostBreakdown(latestSession);
       const toolUsage = SessionAnalyzer.getToolUsage(latestSession.toolCalls);
       const anomalies = SessionAnalyzer.detectAnomalies(latestSession);
-      const timeline = latestSession.agentName === 'kimi-code'
-        ? new KimiCodeParser().getTimeline(latestSession.messages)
-        : [];
+      const timeline = opts.verbose ? latestSession.parser.getTimeline(latestSession.messages) : [];
       Reporter.display(latestSession, stats, costBreakdown, toolUsage, anomalies, timeline);
     }
 
@@ -290,9 +289,7 @@ async function main() {
         const costBreakdown = SessionAnalyzer.getCostBreakdown(parsed);
         const toolUsage = SessionAnalyzer.getToolUsage(parsed.toolCalls);
         const anomalies = SessionAnalyzer.detectAnomalies(parsed);
-        const timeline = parsed.agentName === 'kimi-code'
-          ? new KimiCodeParser().getTimeline(parsed.messages)
-          : [];
+        const timeline = opts.verbose ? parsed.parser.getTimeline(parsed.messages) : [];
         Reporter.display(parsed, stats, costBreakdown, toolUsage, anomalies, timeline);
       } catch (err) {
         console.log(chalk.yellow(`  ⚠️  Error displaying session ${parsed.id}: ${err.message}`));

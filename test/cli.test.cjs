@@ -9,6 +9,9 @@ const demo = JSON.parse(fs.readFileSync(path.join(root, 'examples/session-demo/s
 function run(dir, ...args) {
   return spawnSync(process.execPath, [path.join(root, 'bin/cli.js'), dir, '-a', 'opencode', '--json', ...args], { encoding: 'utf8' });
 }
+function runTerminal(dir, ...args) {
+  return spawnSync(process.execPath, [path.join(root, 'bin/cli.js'), dir, '-a', 'opencode', ...args], { encoding: 'utf8' });
+}
 function withFolder(fn) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'agent-trace-cli-'));
   try { return fn(dir); }
@@ -44,3 +47,26 @@ test('missing sessions and invalid directories fail without a success document',
     assert.equal(result.stdout, '');
   }
 }));
+test('--verbose adds a timeline to JSON for every agent, not only Kimi', () => {
+  const demoDir = path.join(root, 'examples/session-demo');
+  const plain = JSON.parse(run(demoDir).stdout);
+  assert.equal(plain.timeline, undefined);
+  const verbose = JSON.parse(run(demoDir, '-v').stdout);
+  assert.ok(Array.isArray(verbose.timeline), 'expected a timeline array');
+  assert.equal(verbose.timeline.length, 2);
+  assert.equal(verbose.timeline[0].role, 'user');
+  assert.match(verbose.timeline[0].contentPreview, /Synthetic fixture/);
+});
+test('--verbose toggles the conversation and active-period sections in terminal mode', () => {
+  const demoDir = path.join(root, 'examples/session-demo');
+  const plain = runTerminal(demoDir);
+  assert.equal(plain.status, 0, plain.stderr);
+  assert.ok(!plain.stdout.includes('Conversation'), 'timeline should be hidden without -v');
+  assert.ok(!plain.stdout.includes('Active Periods'), 'active periods should be hidden without -v');
+
+  const verbose = runTerminal(demoDir, '-v');
+  assert.equal(verbose.status, 0, verbose.stderr);
+  assert.ok(verbose.stdout.includes('Conversation'), 'timeline should render with -v');
+  assert.ok(verbose.stdout.includes('Active Periods'), 'active periods should render with -v');
+  assert.ok(verbose.stdout.includes('[YOU]'));
+});

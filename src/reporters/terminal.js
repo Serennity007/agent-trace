@@ -15,7 +15,10 @@ try {
  * Display session trace report with chat-style timeline
  */
 class Reporter {
-  static display(parsed, stats, costBreakdown, toolUsage, anomalies, timeline) {
+  static display(parsed, stats, costBreakdown, toolUsage, anomalies, timeline = []) {
+    // Detailed timeline sections render only when the caller passes one
+    // (CLI: only with -v/--verbose). Be tolerant of library callers that omit it.
+    if (!Array.isArray(timeline)) timeline = [];
     const TERM_WIDTH = 80;
     const DIVIDER = chalk.gray('  ' + '─'.repeat(TERM_WIDTH - 4));
 

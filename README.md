@@ -106,6 +106,9 @@ agent-trace -a claude-code
 # Show top 10 most expensive sessions
 agent-trace -n 10
 
+# Show the conversation timeline and active periods for every agent
+agent-trace -v
+
 # Output as JSON
 agent-trace --json
 ```
@@ -181,6 +184,10 @@ agent-trace --json
  [AI ] Fixed. The issue was...           10:31:44 (+14s)
 ```
 
+The `⏱️ Active Periods` and `💬 Conversation` sections are rendered for every
+supported agent when `-v/--verbose` is passed. In JSON mode the same flag adds a
+`timeline` array to the report; without it those sections are omitted.
+
 ---
 
 ## ⚙️ Options
@@ -191,7 +198,7 @@ agent-trace [options] [directory]
 Options:
   -s, --session  <id>   Analyze specific session
   -j, --json            Output as JSON
-  -v, --verbose         Show detailed timeline
+  -v, --verbose         Show detailed conversation timeline and active periods
   -a, --agent    <name> Agent type (opencode, kimi-code, claude-code, codex)
   -n, --top      <n>    Show top N sessions by cost (default: 5)
       --all              Show all sessions (including empty)
