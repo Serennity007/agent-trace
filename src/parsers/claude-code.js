@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const { estimateCost } = require('../pricing');
 
 // Older logs report cache creation as a total, newer ones split it per TTL.
 function cacheCreationTokens(value) {
@@ -29,6 +30,7 @@ function toolResultText(content) {
 class ClaudeCodeParser {
   constructor() {
     this.name = 'Claude Code';
+    this.agentName = 'claude-code';
     this.sessionPaths = [
       path.join(process.env.HOME || process.env.USERPROFILE, '.claude', 'projects'),
     ];
@@ -50,7 +52,10 @@ class ClaudeCodeParser {
           // Check if file has content
           try {
             const content = fs.readFileSync(filePath, 'utf-8').trim();
-            const hasContent = content.length > 0 && content.split('\n').length > 2;
+            // Match the Codex parser: two entries (e.g. one user turn and one
+            // assistant turn) already carry real content. A single line is
+            // usually a truncated/incomplete log.
+            const hasContent = content.length > 0 && content.split('\n').length > 1;
             sessions.push({
               file: filePath,
               id: file.replace('.jsonl', ''),
@@ -80,6 +85,7 @@ class ClaudeCodeParser {
     const filePath = typeof sessionData === 'string' ? sessionData : sessionData.file;
     const parsed = {
       id: path.basename(filePath, '.jsonl'),
+      agentName: this.agentName,
       startTime: null,
       endTime: null,
       duration: 0,
@@ -230,11 +236,8 @@ class ClaudeCodeParser {
       parsed.duration = (parsed.endTime - parsed.startTime) / 1000;
     }
 
-    // Estimate cost (Claude pricing)
-    parsed.cost = (parsed.totalTokens.input * 3 +
-      parsed.totalTokens.output * 15 +
-      parsed.totalTokens.cacheRead * 0.3 +
-      parsed.totalTokens.cacheWrite * 3.75) / 1000000;
+    // Estimate cost from the shared per-agent price table
+    parsed.cost = estimateCost(this.agentName, parsed.totalTokens);
 
     return parsed;
   }

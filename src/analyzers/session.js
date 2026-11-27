@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const { getPricing, estimateCost } = require('../pricing');
 
 /**
  * Generic session analyzer - works with any parser output
@@ -28,31 +29,34 @@ class SessionAnalyzer {
    * Total tokens across base and cache buckets
    */
   static getTokenTotal(totalTokens) {
-    return (totalTokens.input || 0) + (totalTokens.output || 0)
-      + (totalTokens.cacheRead || 0) + (totalTokens.cacheWrite || 0);
+    const tokens = totalTokens || {};
+    return (tokens.input || 0) + (tokens.output || 0)
+      + (tokens.cacheRead || 0) + (tokens.cacheWrite || 0);
   }
 
   /**
-   * Analyze cost breakdown
+   * Analyze cost breakdown using the session's per-agent price table.
+   *
+   * The total is computed with the same estimator the parser used, so for
+   * every agent `stats.estimatedCost === costBreakdown.total.cost`.
    */
   static getCostBreakdown(parsed) {
-    const tokens = parsed.totalTokens;
-    const cacheRead = tokens.cacheRead || 0;
-    const cacheWrite = tokens.cacheWrite || 0;
-    const inputCost = (tokens.input * 3) / 1000000;
-    const outputCost = (tokens.output * 15) / 1000000;
-    const cacheReadCost = (cacheRead * 0.3) / 1000000;
-    const cacheWriteCost = (cacheWrite * 3.75) / 1000000;
+    const tokens = parsed.totalTokens || {};
+    const rates = getPricing(parsed.agentName);
+    const inputCost = ((tokens.input || 0) * rates.input) / 1000000;
+    const outputCost = ((tokens.output || 0) * rates.output) / 1000000;
+    const cacheReadCost = ((tokens.cacheRead || 0) * rates.cacheRead) / 1000000;
+    const cacheWriteCost = ((tokens.cacheWrite || 0) * rates.cacheWrite) / 1000000;
     return {
-      input: { tokens: tokens.input, cost: inputCost },
-      output: { tokens: tokens.output, cost: outputCost },
+      input: { tokens: tokens.input || 0, cost: inputCost },
+      output: { tokens: tokens.output || 0, cost: outputCost },
       cache: {
-        read: { tokens: cacheRead, cost: cacheReadCost },
-        write: { tokens: cacheWrite, cost: cacheWriteCost },
+        read: { tokens: tokens.cacheRead || 0, cost: cacheReadCost },
+        write: { tokens: tokens.cacheWrite || 0, cost: cacheWriteCost },
       },
       total: {
         tokens: SessionAnalyzer.getTokenTotal(tokens),
-        cost: inputCost + outputCost + cacheReadCost + cacheWriteCost,
+        cost: estimateCost(parsed.agentName, tokens),
       },
     };
   }
@@ -67,11 +71,19 @@ class SessionAnalyzer {
         usage[call.name] = { count: 0, totalDuration: 0, avgDuration: 0, successRate: 0 };
       }
       usage[call.name].count++;
-      if (call.duration) usage[call.name].totalDuration += call.duration;
+      if (typeof call.duration === 'number' && call.duration >= 0) {
+        usage[call.name].totalDuration += call.duration;
+      }
     }
     for (const [name, data] of Object.entries(usage)) {
-      data.avgDuration = data.count > 0 ? data.totalDuration / data.count : 0;
       const calls = toolCalls.filter(t => t.name === name);
+      // Only average calls that actually recorded a duration; otherwise a
+      // session with mostly unknown durations (e.g. Claude Code) understates
+      // the average by dividing by the total call count.
+      const timedCalls = calls.filter(t => typeof t.duration === 'number' && t.duration >= 0);
+      data.avgDuration = timedCalls.length > 0
+        ? timedCalls.reduce((sum, call) => sum + call.duration, 0) / timedCalls.length
+        : 0;
       const successes = calls.filter(t => t.success).length;
       data.successRate = calls.length > 0 ? (successes / calls.length) * 100 : 0;
     }

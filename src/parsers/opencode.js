@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const { estimateCost } = require('../pricing');
 
 /**
  * Parse OpenCode session logs
@@ -9,6 +10,7 @@ const path = require('path');
 class OpenCodeParser {
   constructor() {
     this.name = 'OpenCode';
+    this.agentName = 'opencode';
     this.sessionPaths = [
       path.join(process.env.HOME || process.env.USERPROFILE, '.opencode', 'sessions'),
       path.join(process.env.HOME || process.env.USERPROFILE, '.opencode'),
@@ -61,6 +63,7 @@ class OpenCodeParser {
     const messages = sessionData.messages || sessionData.turns || [];
     const parsed = {
       id: sessionData.id || 'unknown',
+      agentName: this.agentName,
       startTime: null,
       endTime: null,
       duration: 0,
@@ -130,8 +133,8 @@ class OpenCodeParser {
       parsed.duration = (parsed.endTime - parsed.startTime) / 1000; // seconds
     }
 
-    // Estimate cost (rough: $3/1M input, $15/1M output for Claude)
-    parsed.cost = (parsed.totalTokens.input * 3 + parsed.totalTokens.output * 15) / 1000000;
+    // Estimate cost from the shared per-agent price table
+    parsed.cost = estimateCost(this.agentName, parsed.totalTokens);
 
     return parsed;
   }

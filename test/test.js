@@ -5,6 +5,7 @@ const path = require('path');
 const { OpenCodeParser } = require('../src/parsers/opencode');
 const { ClaudeCodeParser } = require('../src/parsers/claude-code');
 const { KimiCodeParser } = require('../src/parsers/kimi-code');
+const { CodexParser } = require('../src/parsers/codex');
 const { SessionAnalyzer } = require('../src/analyzers/session');
 
 function withClaudeLog(lines, fn) {
@@ -24,6 +25,42 @@ function claudeEntry(id, content, usage, timestamp) {
     timestamp,
     message: { id, role: 'assistant', content, usage },
   });
+}
+
+function withCodexSession(entries, fn) {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'agent-trace-codex-'));
+  try {
+    const dayDir = path.join(dir, '2026', '01', '01');
+    fs.mkdirSync(dayDir, { recursive: true });
+    const file = path.join(dayDir, 'session.jsonl');
+    const lines = entries.map(entry => JSON.stringify(entry));
+    fs.writeFileSync(file, lines.join('\n') + (lines.length ? '\n' : ''), 'utf-8');
+    return fn(file);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+}
+
+function codexTokenCount(usage, timestamp = '2026-01-01T00:00:05Z') {
+  return {
+    type: 'event_msg',
+    timestamp,
+    payload: { type: 'token_count', info: { total_token_usage: usage } },
+  };
+}
+
+function assertOneCostOfTruth(parsed, expectedCost) {
+  const breakdown = SessionAnalyzer.getCostBreakdown(parsed);
+  const stats = SessionAnalyzer.getStats(parsed);
+  assert.strictEqual(breakdown.total.cost, parsed.cost,
+    `breakdown ${breakdown.total.cost} !== parser ${parsed.cost}`);
+  assert.strictEqual(stats.estimatedCost, breakdown.total.cost,
+    `stats ${stats.estimatedCost} !== breakdown ${breakdown.total.cost}`);
+  if (expectedCost !== undefined) {
+    assert.ok(Math.abs(breakdown.total.cost - expectedCost) < 1e-12,
+      `cost was ${breakdown.total.cost}, expected ${expectedCost}`);
+  }
+  return breakdown;
 }
 
 function withKimiSession(wireFiles, fn) {
@@ -135,6 +172,16 @@ async function runTests() {
     };
     const parsed = parser.parseSession(data);
     assert.strictEqual(parsed.duration, 300); // 5 minutes
+  });
+
+  test('OpenCode cost estimate matches the analyzer breakdown', () => {
+    const parsed = new OpenCodeParser().parseSession({
+      messages: [
+        { role: 'assistant', content: 'x', usage: { input_tokens: 1000, output_tokens: 500 } },
+      ],
+    });
+    assert.strictEqual(parsed.agentName, 'opencode');
+    assertOneCostOfTruth(parsed, 0.0105);
   });
 
   // Claude Code parser: one response spread over several log entries
@@ -256,6 +303,56 @@ async function runTests() {
       + breakdown.cache.read.cost + breakdown.cache.write.cost)) < 1e-12);
   });
 
+  test('Claude cost estimate matches the analyzer breakdown', () => {
+    withClaudeLog(splitResponse, parsed => {
+      assert.strictEqual(parsed.agentName, 'claude-code');
+      assertOneCostOfTruth(parsed, 0.01245);
+    });
+  });
+
+  // Codex parser: cumulative token_count usage and per-agent pricing
+  console.log('\n📋 Codex Parser:');
+  test('prices Codex tokens once and agrees with the analyzer breakdown', () => {
+    withCodexSession([codexTokenCount({ input_tokens: 1000000, output_tokens: 1000000 })], file => {
+      const parsed = new CodexParser().parseSession(file);
+      assert.strictEqual(parsed.agentName, 'codex');
+      assert.deepStrictEqual(parsed.totalTokens, {
+        input: 1000000, output: 1000000, cacheRead: 0, cacheWrite: 0,
+      });
+      const breakdown = assertOneCostOfTruth(parsed, 12.5);
+      assert.ok(Math.abs(breakdown.input.cost - 2.5) < 1e-12);
+      assert.ok(Math.abs(breakdown.output.cost - 10) < 1e-12);
+    });
+  });
+
+  test('prices Codex cached input at the cache-read rate', () => {
+    withCodexSession([codexTokenCount({
+      input_tokens: 1000000, cached_input_tokens: 400000, output_tokens: 1000000,
+    })], file => {
+      const parsed = new CodexParser().parseSession(file);
+      assert.deepStrictEqual(parsed.totalTokens, {
+        input: 600000, output: 1000000, cacheRead: 400000, cacheWrite: 0,
+      });
+      // Split buckets must still add up to the reported total token count.
+      assert.strictEqual(SessionAnalyzer.getTokenTotal(parsed.totalTokens), 2000000);
+      const breakdown = assertOneCostOfTruth(parsed, 12);
+      assert.ok(Math.abs(breakdown.cache.read.cost - 0.5) < 1e-12);
+    });
+  });
+
+  test('takes the last cumulative Codex token count instead of summing', () => {
+    withCodexSession([
+      codexTokenCount({ input_tokens: 100, output_tokens: 10 }, '2026-01-01T00:00:01Z'),
+      codexTokenCount({ input_tokens: 250, output_tokens: 30 }, '2026-01-01T00:00:02Z'),
+    ], file => {
+      const parsed = new CodexParser().parseSession(file);
+      assert.deepStrictEqual(parsed.totalTokens, {
+        input: 250, output: 30, cacheRead: 0, cacheWrite: 0,
+      });
+      assertOneCostOfTruth(parsed);
+    });
+  });
+
   // Kimi Code parser: four usage buckets across every agent wire log
   console.log('\n📋 Kimi Code Parser:');
   const kimiUsage = (usage, time) => ({ type: 'usage.record', time, usage });
@@ -299,6 +396,19 @@ async function runTests() {
     });
   });
 
+  test('Kimi cost estimate matches the analyzer breakdown', () => {
+    withKimiSession({
+      main: [kimiUsage({ inputOther: 1000, output: 500, inputCacheRead: 200, inputCacheCreation: 300 }, '2026-01-01T00:00:05Z')],
+      'sub-agent': [kimiUsage({ inputOther: 200, output: 100 }, '2026-01-01T00:00:06Z')],
+    }, dir => {
+      const parser = new KimiCodeParser();
+      parser.sessionPaths = [dir];
+      const parsed = parser.parseSession(parser.findSessions()[0]);
+      assert.strictEqual(parsed.agentName, 'kimi-code');
+      assertOneCostOfTruth(parsed, 0.009585);
+    });
+  });
+
   // Package entry point
   console.log('\n📋 Package Entry Point:');
   test('require("..") resolves the declared library entry point', () => {
@@ -309,7 +419,24 @@ async function runTests() {
     assert.strictEqual(typeof api.CodexParser, 'function');
     assert.strictEqual(typeof api.SessionAnalyzer, 'function');
     assert.strictEqual(typeof api.Reporter, 'function');
+    assert.strictEqual(typeof api.Pricing.estimateCost, 'function');
     assert.strictEqual(new api.KimiCodeParser().name, 'Kimi Code');
+  });
+
+  // Central price table
+  console.log('\n📋 Pricing:');
+  test('has one price table for all four supported agents', () => {
+    const { PRICING, getPricing, estimateCost } = require('../src/pricing');
+    for (const agent of ['opencode', 'claude-code', 'kimi-code', 'codex']) {
+      assert.ok(PRICING[agent], `missing pricing for ${agent}`);
+    }
+    // Unknown agents keep the legacy Claude fallback.
+    assert.strictEqual(getPricing('unknown-agent'), PRICING['claude-code']);
+    assert.strictEqual(estimateCost('claude-code', { input: 1000000, output: 1000000 }), 18);
+    assert.strictEqual(estimateCost('kimi-code', { input: 1000000, output: 1000000 }), 12);
+    assert.strictEqual(estimateCost('codex', { input: 1000000, output: 1000000 }), 12.5);
+    assert.strictEqual(estimateCost('codex', { cacheRead: 1000000 }), 1.25);
+    assert.strictEqual(estimateCost('claude-code', {}), 0);
   });
 
   // Analyzer tests

@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const { estimateCost } = require('../pricing');
 
 /**
  * Parse Codex session logs
@@ -10,6 +11,7 @@ const path = require('path');
 class CodexParser {
   constructor() {
     this.name = 'Codex';
+    this.agentName = 'codex';
     this.sessionPaths = [
       path.join(process.env.HOME || process.env.USERPROFILE, '.codex', 'sessions'),
     ];
@@ -65,12 +67,13 @@ class CodexParser {
     const filePath = typeof sessionData === 'string' ? sessionData : sessionData.file;
     const parsed = {
       id: path.basename(filePath, '.jsonl'),
+      agentName: this.agentName,
       startTime: null,
       endTime: null,
       duration: 0,
       messages: [],
       toolCalls: [],
-      totalTokens: { input: 0, output: 0 },
+      totalTokens: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
       cost: 0,
       errors: [],
       retries: 0,
@@ -190,9 +193,24 @@ class CodexParser {
       // File read error
     }
 
-    // Use the last cumulative token count (not sum)
+    // Use the last cumulative token count (not sum). Codex usage reports
+    // `cached_input_tokens` (and occasionally `cache_write_input_tokens`) as
+    // subsets of `input_tokens`, so split them into their own buckets instead
+    // of pricing cached tokens at the full input rate.
     if (lastTokenUsage) {
-      parsed.totalTokens.input = lastTokenUsage.input_tokens || 0;
+      const cachedInput = lastTokenUsage.cached_input_tokens
+        || lastTokenUsage.cache_read_input_tokens
+        || lastTokenUsage.input_tokens_details?.cached_tokens
+        || 0;
+      const cacheWrite = lastTokenUsage.cache_write_input_tokens
+        || lastTokenUsage.cache_creation_input_tokens
+        || lastTokenUsage.input_tokens_details?.cache_creation_tokens
+        || 0;
+      const totalInput = lastTokenUsage.input_tokens || 0;
+
+      parsed.totalTokens.cacheRead = cachedInput;
+      parsed.totalTokens.cacheWrite = cacheWrite;
+      parsed.totalTokens.input = Math.max(0, totalInput - cachedInput - cacheWrite);
       parsed.totalTokens.output = lastTokenUsage.output_tokens || 0;
     }
 
@@ -201,8 +219,8 @@ class CodexParser {
       parsed.duration = (parsed.endTime - parsed.startTime) / 1000;
     }
 
-    // Estimate cost (GPT pricing estimate)
-    parsed.cost = (parsed.totalTokens.input * 2.5 + parsed.totalTokens.output * 10) / 1000000;
+    // Estimate cost from the shared per-agent price table
+    parsed.cost = estimateCost(this.agentName, parsed.totalTokens);
 
     return parsed;
   }

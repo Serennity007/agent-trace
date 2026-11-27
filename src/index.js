@@ -10,6 +10,7 @@ const { KimiCodeParser } = require('./parsers/kimi-code');
 const { CodexParser } = require('./parsers/codex');
 const { SessionAnalyzer } = require('./analyzers/session');
 const { Reporter } = require('./reporters/terminal');
+const Pricing = require('./pricing');
 
 module.exports = {
   OpenCodeParser,
@@ -18,4 +19,5 @@ module.exports = {
   CodexParser,
   SessionAnalyzer,
   Reporter,
+  Pricing,
 };

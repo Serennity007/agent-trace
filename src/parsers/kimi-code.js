@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const { estimateCost } = require('../pricing');
 
 /**
  * Parse Kimi Code session logs
@@ -9,6 +10,7 @@ const path = require('path');
 class KimiCodeParser {
   constructor() {
     this.name = 'Kimi Code';
+    this.agentName = 'kimi-code';
     this.sessionPaths = [
       path.join(process.env.HOME || process.env.USERPROFILE, '.kimi-code', 'sessions'),
     ];
@@ -90,6 +92,7 @@ class KimiCodeParser {
   parseSession(session) {
     const parsed = {
       id: session.id,
+      agentName: this.agentName,
       startTime: null,
       endTime: null,
       duration: 0,
@@ -158,18 +161,27 @@ class KimiCodeParser {
                 pendingToolCalls.push(toolCall);
               }
 
-              // Tool result (check for errors)
-              if (event.type === 'tool.result' && pendingToolCalls.length > 0) {
-                const lastTool = pendingToolCalls[pendingToolCalls.length - 1];
+              // Tool result: match it to the pending call and record failures.
+              // Results are nested inside context.append_loop_event, mirroring
+              // the nested Claude tool_result fix.
+              if (event.type === 'tool.result') {
                 if (event.error || event.isError) {
-                  lastTool.success = false;
-                  lastTool.error = String(event.error || 'Tool error').substring(0, 100);
+                  const errorMessage = String(event.error || 'Tool error').substring(0, 100);
+                  parsed.errors.push({ message: errorMessage, timestamp });
+                  if (pendingToolCalls.length > 0) {
+                    const failedTool = pendingToolCalls[pendingToolCalls.length - 1];
+                    failedTool.success = false;
+                    failedTool.error = errorMessage;
+                  }
                 }
-                // Calculate duration if both timestamps exist
-                if (lastTool.timestamp && timestamp) {
-                  lastTool.duration = (timestamp - lastTool.timestamp) / 1000;
+                if (pendingToolCalls.length > 0) {
+                  const lastTool = pendingToolCalls[pendingToolCalls.length - 1];
+                  // Calculate duration if both timestamps exist
+                  if (lastTool.timestamp && timestamp) {
+                    lastTool.duration = (timestamp - lastTool.timestamp) / 1000;
+                  }
+                  pendingToolCalls.pop();
                 }
-                pendingToolCalls.pop();
               }
 
               // Assistant text output
@@ -240,12 +252,8 @@ class KimiCodeParser {
       parsed.duration = (parsed.endTime - parsed.startTime) / 1000;
     }
 
-    // Estimate cost (Kimi/mimo pricing estimate). Cache buckets use the same
-    // rates as the Claude Code parser: $0.30/MTok read, $3.75/MTok write.
-    parsed.cost = (parsed.totalTokens.input * 2 +
-      parsed.totalTokens.output * 10 +
-      parsed.totalTokens.cacheRead * 0.3 +
-      parsed.totalTokens.cacheWrite * 3.75) / 1000000;
+    // Estimate cost from the shared per-agent price table
+    parsed.cost = estimateCost(this.agentName, parsed.totalTokens);
 
     return parsed;
   }
