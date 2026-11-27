@@ -157,7 +157,7 @@ agent-trace [选项] [目录]
 
 | Agent | 状态 | 配置路径 |
 |-------|------|---------|
-| **OpenCode** | ✅ 已支持 | `~/.opencode/sessions/` |
+| **OpenCode** | ✅ 已支持 | `~/.local/share/opencode/storage/` (pre-1.2 JSON tree) · `~/.opencode/sessions/` (legacy flat JSON) |
 | **Claude Code** | ✅ 已支持 | `~/.claude/projects/` |
 | **Kimi Code** | ✅ 已支持 | `~/.kimi-code/sessions/` |
 | **Codex** | ✅ 已支持 | `~/.codex/sessions/` |
@@ -165,6 +165,12 @@ agent-trace [选项] [目录]
 | **Windsurf** | 🔜 即将支持 | — |
 | **Cline** | 🔜 即将支持 | — |
 | **Continue** | 🔜 即将支持 | — |
+
+> **OpenCode 存储位置：** agent-trace 读取 pre-1.2 JSON 目录树
+> （`~/.local/share/opencode/storage/{session,message,part}/`）以及旧的扁平文件
+> `~/.opencode/sessions/*.json`。OpenCode 1.2+ 将会话存入 SQLite
+> （`~/.local/share/opencode/opencode.db`）。该数据库只会被检测、不会被读取：
+> CLI 会向 stderr 输出警告并继续执行。如需分析这些会话，请使用 JSON 目录树导出。
 
 ### 自动检测
 

@@ -1,0 +1,19 @@
+{
+  "id": "prt_fixtureTool001",
+  "messageID": "msg_fixtureAsst001",
+  "sessionID": "ses_fixtureTree0001",
+  "type": "tool",
+  "tool": "read",
+  "callID": "toolu_fixture0001",
+  "state": {
+    "status": "completed",
+    "input": {
+      "filePath": "/tmp/fixture-project/demo.txt"
+    },
+    "output": "fixture content",
+    "time": {
+      "start": 1767225601000,
+      "end": 1767225601100
+    }
+  }
+}

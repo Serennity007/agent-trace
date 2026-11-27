@@ -1,0 +1,11 @@
+{
+  "id": "ses_fixtureTree0001",
+  "projectID": "proj_fixture",
+  "directory": "/tmp/fixture-project",
+  "title": "JSON-tree fixture session",
+  "version": "1.1.0",
+  "time": {
+    "created": 1767225600000,
+    "updated": 1767225604000
+  }
+}

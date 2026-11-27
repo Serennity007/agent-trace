@@ -159,7 +159,7 @@ Options:
 
 | Agent | Statut | Chemin de configuration |
 |-------|--------|------------------------|
-| **OpenCode** | ✅ Pris en charge | `~/.opencode/sessions/` |
+| **OpenCode** | ✅ Pris en charge | `~/.local/share/opencode/storage/` (pre-1.2 JSON tree) · `~/.opencode/sessions/` (legacy flat JSON) |
 | **Claude Code** | ✅ Pris en charge | `~/.claude/projects/` |
 | **Kimi Code** | ✅ Pris en charge | `~/.kimi-code/sessions/` |
 | **Codex** | ✅ Pris en charge | `~/.codex/sessions/` |

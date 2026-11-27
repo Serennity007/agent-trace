@@ -1,0 +1,11 @@
+{
+  "id": "prt_fixtureUser001",
+  "messageID": "msg_fixtureUser001",
+  "sessionID": "ses_fixtureTree0001",
+  "type": "text",
+  "text": "Inspect the fixture file.",
+  "time": {
+    "start": 1767225600100,
+    "end": 1767225600100
+  }
+}

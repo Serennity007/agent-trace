@@ -159,7 +159,7 @@ Options:
 
 | 에이전트 | 상태 | 설정 경로 |
 |---------|------|----------|
-| **OpenCode** | ✅ 지원됨 | `~/.opencode/sessions/` |
+| **OpenCode** | ✅ 지원됨 | `~/.local/share/opencode/storage/` (pre-1.2 JSON tree) · `~/.opencode/sessions/` (legacy flat JSON) |
 | **Claude Code** | ✅ 지원됨 | `~/.claude/projects/` |
 | **Kimi Code** | ✅ 지원됨 | `~/.kimi-code/sessions/` |
 | **Codex** | ✅ 지원됨 | `~/.codex/sessions/` |

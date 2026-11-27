@@ -159,7 +159,7 @@ Options:
 
 | エージェント | ステータス | 設定パス |
 |-------------|-----------|---------|
-| **OpenCode** | ✅ 対応済み | `~/.opencode/sessions/` |
+| **OpenCode** | ✅ 対応済み | `~/.local/share/opencode/storage/` (pre-1.2 JSON tree) · `~/.opencode/sessions/` (legacy flat JSON) |
 | **Claude Code** | ✅ 対応済み | `~/.claude/projects/` |
 | **Kimi Code** | ✅ 対応済み | `~/.kimi-code/sessions/` |
 | **Codex** | ✅ 対応済み | `~/.codex/sessions/` |

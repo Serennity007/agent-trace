@@ -1,0 +1,11 @@
+{
+  "id": "prt_fixtureText001",
+  "messageID": "msg_fixtureAsst001",
+  "sessionID": "ses_fixtureTree0001",
+  "type": "text",
+  "text": "Fixture inspection complete.",
+  "time": {
+    "start": 1767225600300,
+    "end": 1767225600300
+  }
+}

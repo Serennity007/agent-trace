@@ -1,0 +1,19 @@
+{
+  "id": "prt_fixtureTool002",
+  "messageID": "msg_fixtureAsst001",
+  "sessionID": "ses_fixtureTree0001",
+  "type": "tool",
+  "tool": "bash",
+  "callID": "toolu_fixture0002",
+  "state": {
+    "status": "error",
+    "input": {
+      "command": "false"
+    },
+    "error": "Command failed with exit code 1",
+    "time": {
+      "start": 1767225601200,
+      "end": 1767225601300
+    }
+  }
+}

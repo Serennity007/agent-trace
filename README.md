@@ -213,7 +213,7 @@ Options:
 
 | Agent | Status | Config Path |
 |-------|--------|-------------|
-| **OpenCode** | ✅ Supported | `~/.opencode/sessions/` |
+| **OpenCode** | ✅ Supported (JSON exports) | `~/.local/share/opencode/storage/` (pre-1.2 JSON tree) · `~/.opencode/sessions/` (legacy flat JSON) |
 | **Claude Code** | ✅ Supported | `~/.claude/projects/` |
 | **Kimi Code** | ✅ Supported | `~/.kimi-code/sessions/` |
 | **Codex** | ✅ Supported | `~/.codex/sessions/` |
@@ -221,6 +221,13 @@ Options:
 | **Windsurf** | 🔜 Coming soon | — |
 | **Cline** | 🔜 Coming soon | — |
 | **Continue** | 🔜 Coming soon | — |
+
+> **OpenCode storage:** agent-trace reads the pre-1.2 JSON tree
+> (`~/.local/share/opencode/storage/{session,message,part}/`) and the legacy flat
+> `~/.opencode/sessions/*.json` files. OpenCode 1.2+ stores sessions in SQLite
+> (`~/.local/share/opencode/opencode.db`). That database is detected but not read:
+> the CLI prints a warning to stderr and keeps the rest of the run working, so
+> analyze a JSON-tree export to include those sessions.
 
 ### 🔄 Auto-Detection
 

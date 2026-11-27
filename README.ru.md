@@ -159,7 +159,7 @@ Options:
 
 | Агент | Статус | Путь конфигурации |
 |-------|--------|-------------------|
-| **OpenCode** | ✅ Поддерживается | `~/.opencode/sessions/` |
+| **OpenCode** | ✅ Поддерживается | `~/.local/share/opencode/storage/` (pre-1.2 JSON tree) · `~/.opencode/sessions/` (legacy flat JSON) |
 | **Claude Code** | ✅ Поддерживается | `~/.claude/projects/` |
 | **Kimi Code** | ✅ Поддерживается | `~/.kimi-code/sessions/` |
 | **Codex** | ✅ Поддерживается | `~/.codex/sessions/` |

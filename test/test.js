@@ -200,6 +200,159 @@ async function runTests() {
     assertOneCostOfTruth(parsed, 0.0105);
   });
 
+  // OpenCode storage layouts: current OpenCode stores its pre-1.2 JSON tree in
+  // ~/.local/share/opencode/storage, not in ~/.opencode/sessions.
+  const openCodeTreeFixture = path.join(__dirname, 'fixtures', 'opencode-json-tree');
+
+  function withTempDir(fn) {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'agent-trace-opencode-'));
+    try { return fn(dir); } finally { fs.rmSync(dir, { recursive: true, force: true }); }
+  }
+
+  function withFakeHome(home, fn) {
+    const saved = { HOME: process.env.HOME, USERPROFILE: process.env.USERPROFILE };
+    try {
+      process.env.HOME = home;
+      process.env.USERPROFILE = home;
+      return fn();
+    } finally {
+      if (saved.HOME === undefined) delete process.env.HOME; else process.env.HOME = saved.HOME;
+      if (saved.USERPROFILE === undefined) delete process.env.USERPROFILE; else process.env.USERPROFILE = saved.USERPROFILE;
+    }
+  }
+
+  test('discovers the pre-1.2 JSON tree from a data directory', () => {
+    const parser = new OpenCodeParser();
+    parser.sessionPaths = [openCodeTreeFixture];
+    const sessions = parser.findSessions();
+    assert.strictEqual(sessions.length, 1);
+    assert.strictEqual(sessions[0].id, 'ses_fixtureTree0001');
+    assert.strictEqual(sessions[0].hasContent, true);
+    assert.deepStrictEqual(parser.warnings, []);
+  });
+
+  test('parses JSON-tree tokens, cache buckets and tool parts', () => {
+    const parser = new OpenCodeParser();
+    parser.sessionPaths = [openCodeTreeFixture];
+    const parsed = parser.parseSession(parser.findSessions()[0]);
+    assert.deepStrictEqual(parsed.totalTokens, { input: 1000, output: 500, cacheRead: 200, cacheWrite: 300 });
+    assert.strictEqual(parsed.messages.length, 2);
+    assert.deepStrictEqual(parsed.messages.map(m => m.role), ['user', 'assistant']);
+    assert.strictEqual(parsed.messages[0].content, 'Inspect the fixture file.');
+    assert.strictEqual(parsed.messages[1].content, 'Fixture inspection complete.');
+    assert.strictEqual(parsed.toolCalls.length, 2);
+    assert.strictEqual(parsed.toolCalls[0].name, 'read');
+    assert.strictEqual(parsed.toolCalls[0].success, true);
+    assert.strictEqual(parsed.toolCalls[1].success, false);
+    assert.strictEqual(parsed.toolCalls[1].error, 'Command failed with exit code 1');
+    assert.strictEqual(parsed.errors.length, 1);
+    assert.strictEqual(parsed.duration, 4);
+    // $3/MTok input, $15/MTok output, $0.30/MTok cache read, $3.75/MTok cache write.
+    assert.ok(Math.abs(parsed.cost - 0.011685) < 1e-12, `cost was ${parsed.cost}`);
+  });
+
+  test('parses a JSON-tree session given its file path', () => {
+    const parser = new OpenCodeParser();
+    const file = path.join(openCodeTreeFixture, 'storage', 'session', 'proj_fixture', 'ses_fixtureTree0001.json');
+    const parsed = parser.parseSession(file);
+    assert.strictEqual(parsed.id, 'ses_fixtureTree0001');
+    assert.strictEqual(parsed.totalTokens.input, 1000);
+    assert.strictEqual(parsed.totalTokens.cacheRead, 200);
+  });
+
+  test('keeps the flat legacy JSON layout working as fallback', () => {
+    const parser = new OpenCodeParser();
+    parser.sessionPaths = [path.join(__dirname, '..', 'examples', 'session-demo')];
+    const sessions = parser.findSessions();
+    assert.strictEqual(sessions.length, 1);
+    assert.strictEqual(sessions[0].hasContent, true);
+    const parsed = parser.parseSession(sessions[0].data);
+    assert.strictEqual(parsed.id, 'synthetic-demo');
+    assert.deepStrictEqual(parsed.totalTokens, { input: 100, output: 50, cacheRead: 0, cacheWrite: 0 });
+    assert.strictEqual(parsed.toolCalls.length, 1);
+    assert.strictEqual(parsed.toolCalls[0].name, 'read_file');
+  });
+
+  test('warns instead of silently finding zero sessions when only SQLite storage exists', () => withTempDir(dir => {
+    fs.writeFileSync(path.join(dir, 'opencode.db'), '', 'utf-8');
+    const parser = new OpenCodeParser();
+    parser.sessionPaths = [dir];
+    assert.deepStrictEqual(parser.findSessions(), []);
+    assert.strictEqual(parser.warnings.length, 1);
+    assert.match(parser.warnings[0], /OpenCode SQLite storage detected/);
+    assert.match(parser.warnings[0], /JSON-tree export not found/);
+    assert.match(parser.warnings[0], /may be incomplete/);
+  }));
+
+  test('warns when SQLite storage coexists with a stale JSON tree', () => withTempDir(dir => {
+    fs.cpSync(openCodeTreeFixture, dir, { recursive: true });
+    fs.writeFileSync(path.join(dir, 'opencode.db'), '', 'utf-8');
+    const parser = new OpenCodeParser();
+    parser.sessionPaths = [dir];
+    assert.strictEqual(parser.findSessions().length, 1);
+    assert.strictEqual(parser.warnings.length, 1);
+    assert.match(parser.warnings[0], /OpenCode SQLite storage detected/);
+    assert.match(parser.warnings[0], /sessions stored in SQLite may be missing/);
+  }));
+
+  test('discovers OpenCode data under both HOME and USERPROFILE', () => {
+    const saved = { HOME: process.env.HOME, USERPROFILE: process.env.USERPROFILE };
+    try {
+      process.env.HOME = path.join(os.tmpdir(), 'agent-trace-fixture-home');
+      process.env.USERPROFILE = path.join(os.tmpdir(), 'agent-trace-fixture-profile');
+      const parser = new OpenCodeParser();
+      assert(parser.sessionPaths.includes(path.join(process.env.HOME, '.local', 'share', 'opencode')));
+      assert(parser.sessionPaths.includes(path.join(process.env.USERPROFILE, '.local', 'share', 'opencode')));
+      assert(parser.sessionPaths.includes(path.join(process.env.HOME, '.opencode', 'sessions')));
+    } finally {
+      if (saved.HOME === undefined) delete process.env.HOME; else process.env.HOME = saved.HOME;
+      if (saved.USERPROFILE === undefined) delete process.env.USERPROFILE; else process.env.USERPROFILE = saved.USERPROFILE;
+    }
+  });
+
+  test('finds JSON-tree sessions through the default HOME path', () => withTempDir(home => {
+    const dataDir = path.join(home, '.local', 'share', 'opencode');
+    fs.mkdirSync(dataDir, { recursive: true });
+    fs.cpSync(openCodeTreeFixture, dataDir, { recursive: true });
+    withFakeHome(home, () => {
+      const parser = new OpenCodeParser();
+      const sessions = parser.findSessions();
+      assert.strictEqual(sessions.length, 1);
+      assert.strictEqual(sessions[0].id, 'ses_fixtureTree0001');
+    });
+  }));
+
+  test('finds legacy flat sessions through the default ~/.opencode/sessions path', () => withTempDir(home => {
+    const sessionsDir = path.join(home, '.opencode', 'sessions');
+    fs.mkdirSync(sessionsDir, { recursive: true });
+    fs.copyFileSync(
+      path.join(__dirname, '..', 'examples', 'session-demo', 'synthetic-demo.json'),
+      path.join(sessionsDir, 'legacy-session.json')
+    );
+    withFakeHome(home, () => {
+      const parser = new OpenCodeParser();
+      const sessions = parser.findSessions();
+      assert.strictEqual(sessions.length, 1);
+      assert.strictEqual(sessions[0].hasContent, true);
+      const parsed = parser.parseSession(sessions[0].data);
+      assert.strictEqual(parsed.totalTokens.input, 100);
+      assert.strictEqual(parsed.totalTokens.output, 50);
+    });
+  }));
+
+  test('warns through the default data path when only SQLite storage exists', () => withTempDir(home => {
+    const dataDir = path.join(home, '.local', 'share', 'opencode');
+    fs.mkdirSync(dataDir, { recursive: true });
+    fs.writeFileSync(path.join(dataDir, 'opencode.db'), '', 'utf-8');
+    withFakeHome(home, () => {
+      const parser = new OpenCodeParser();
+      assert.deepStrictEqual(parser.findSessions(), []);
+      assert.strictEqual(parser.warnings.length, 1);
+      assert.match(parser.warnings[0], /OpenCode SQLite storage detected/);
+      assert.match(parser.warnings[0], /JSON-tree export not found/);
+    });
+  }));
+
   // Claude Code parser: one response spread over several log entries
   console.log('\n📋 Claude Code Parser:');
   const splitResponse = [

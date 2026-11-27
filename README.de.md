@@ -159,7 +159,7 @@ Options:
 
 | Agent | Status | Konfigurationspfad |
 |-------|--------|-------------------|
-| **OpenCode** | ✅ Unterstützt | `~/.opencode/sessions/` |
+| **OpenCode** | ✅ Unterstützt | `~/.local/share/opencode/storage/` (pre-1.2 JSON tree) · `~/.opencode/sessions/` (legacy flat JSON) |
 | **Claude Code** | ✅ Unterstützt | `~/.claude/projects/` |
 | **Kimi Code** | ✅ Unterstützt | `~/.kimi-code/sessions/` |
 | **Codex** | ✅ Unterstützt | `~/.codex/sessions/` |

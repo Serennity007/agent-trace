@@ -159,7 +159,7 @@ Options:
 
 | المساعد | الحالة | مسار الإعدادات |
 |---------|--------|----------------|
-| **OpenCode** | ✅ مدعوم | `~/.opencode/sessions/` |
+| **OpenCode** | ✅ مدعوم | `~/.local/share/opencode/storage/` (pre-1.2 JSON tree) · `~/.opencode/sessions/` (legacy flat JSON) |
 | **Claude Code** | ✅ مدعوم | `~/.claude/projects/` |
 | **Kimi Code** | ✅ مدعوم | `~/.kimi-code/sessions/` |
 | **Codex** | ✅ مدعوم | `~/.codex/sessions/` |

@@ -124,6 +124,10 @@ async function main() {
     // Explicit input must never fall back to personal log discovery.
     if (program.args.length) parser.sessionPaths = [path.resolve(program.args[0])];
     const sessions = parser.findSessions();
+    // Diagnostics go to stderr so JSON output stays machine-readable.
+    for (const warning of parser.warnings || []) {
+      console.error(chalk.yellow(`  ⚠️  ${warning}`));
+    }
     for (const session of sessions) {
       allSessions.push({ ...session, agentName: name, parser });
     }

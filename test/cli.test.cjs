@@ -17,10 +17,49 @@ function withFolder(fn) {
   try { return fn(dir); }
   finally { fs.rmSync(dir, { recursive: true, force: true }); }
 }
+function runDiscovery(env) {
+  return spawnSync(process.execPath, [path.join(root, 'bin/cli.js'), '-a', 'opencode', '--json'], {
+    encoding: 'utf8',
+    env,
+  });
+}
 test('explicit empty directory yields JSON without discovering personal logs', () => withFolder(dir => {
   const result = run(dir);
   assert.equal(result.status, 0, result.stderr);
   assert.deepEqual(JSON.parse(result.stdout), []);
+}));
+test('discovers and parses the pre-1.2 OpenCode JSON tree', () => {
+  const result = run(path.join(root, 'test', 'fixtures', 'opencode-json-tree'));
+  assert.equal(result.status, 0, result.stderr);
+  const report = JSON.parse(result.stdout);
+  assert.equal(report.agent, 'opencode');
+  assert.equal(report.session, 'ses_fixtureTree0001');
+  assert.equal(report.stats.totalMessages, 2);
+  assert.equal(report.costBreakdown.input.tokens, 1000);
+  assert.equal(report.costBreakdown.output.tokens, 500);
+  assert.equal(report.costBreakdown.cache.read.tokens, 200);
+  assert.equal(report.costBreakdown.cache.write.tokens, 300);
+  assert.equal(report.toolUsage.read.count, 1);
+  assert.equal(report.toolUsage.bash.successRate, 0);
+  assert.equal(result.stderr, '');
+});
+test('discovers OpenCode data under HOME/USERPROFILE without a directory argument', () => withFolder(home => {
+  const dataDir = path.join(home, '.local', 'share', 'opencode');
+  fs.mkdirSync(dataDir, { recursive: true });
+  fs.cpSync(path.join(root, 'test', 'fixtures', 'opencode-json-tree'), dataDir, { recursive: true });
+  const result = runDiscovery({ ...process.env, HOME: home, USERPROFILE: home });
+  assert.equal(result.status, 0, result.stderr);
+  const report = JSON.parse(result.stdout);
+  assert.equal(report.session, 'ses_fixtureTree0001');
+}));
+test('warns on stderr but keeps working for SQLite-only storage', () => withFolder(dir => {
+  fs.writeFileSync(path.join(dir, 'opencode.db'), '', 'utf-8');
+  const result = run(dir);
+  assert.equal(result.status, 0, result.stderr);
+  assert.deepEqual(JSON.parse(result.stdout), []);
+  assert.match(result.stderr, /OpenCode SQLite storage detected/);
+  assert.match(result.stderr, /JSON-tree export not found/);
+  assert.match(result.stderr, /may be incomplete/);
 }));
 test('synthetic first run retains the single-session JSON contract', () => {
   const result = run(path.join(root, 'examples/session-demo'));
