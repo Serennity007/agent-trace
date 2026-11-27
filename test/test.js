@@ -190,6 +190,62 @@ async function runTests() {
     });
   });
 
+  test('marks a tool call failed when a nested tool_result has is_error', () => {
+    withClaudeLog([
+      JSON.stringify({ type: 'user', timestamp: '2026-01-01T00:00:00Z', message: { role: 'user', content: 'run it' } }),
+      claudeEntry('msg_tool', [{ type: 'tool_use', id: 'toolu_01', name: 'Bash', input: { command: 'false' } }], {
+        input_tokens: 10, output_tokens: 5,
+      }, '2026-01-01T00:00:01Z'),
+      JSON.stringify({
+        type: 'user',
+        timestamp: '2026-01-01T00:00:02Z',
+        message: {
+          role: 'user',
+          content: [{ type: 'tool_result', tool_use_id: 'toolu_01', content: 'exit code 1', is_error: true }],
+        },
+      }),
+    ], parsed => {
+      assert.strictEqual(parsed.toolCalls.length, 1);
+      assert.strictEqual(parsed.toolCalls[0].success, false);
+      assert.strictEqual(parsed.toolCalls[0].error, 'exit code 1');
+      assert.strictEqual(parsed.errors.length, 1);
+      assert.strictEqual(parsed.errors[0].message, 'exit code 1');
+      const usage = SessionAnalyzer.getToolUsage(parsed.toolCalls);
+      assert.strictEqual(usage.Bash.successRate, 0);
+      assert(SessionAnalyzer.detectAnomalies(parsed).some(a => a.type === 'tool_failures'));
+    });
+  });
+
+  test('matches nested tool results by tool_use id', () => {
+    withClaudeLog([
+      claudeEntry('msg_a', [{ type: 'tool_use', id: 'toolu_01', name: 'Bash', input: { command: 'false' } }], {
+        input_tokens: 10, output_tokens: 5,
+      }, '2026-01-01T00:00:01Z'),
+      claudeEntry('msg_b', [{ type: 'tool_use', id: 'toolu_02', name: 'Read', input: { file_path: 'a.txt' } }], {
+        input_tokens: 10, output_tokens: 5,
+      }, '2026-01-01T00:00:02Z'),
+      JSON.stringify({
+        type: 'user',
+        timestamp: '2026-01-01T00:00:03Z',
+        message: {
+          role: 'user',
+          content: [{
+            type: 'tool_result',
+            tool_use_id: 'toolu_01',
+            content: [{ type: 'text', text: 'exit code 1' }],
+            is_error: true,
+          }],
+        },
+      }),
+    ], parsed => {
+      assert.strictEqual(parsed.toolCalls.length, 2);
+      assert.strictEqual(parsed.toolCalls[0].success, false);
+      assert.strictEqual(parsed.toolCalls[0].error, 'exit code 1');
+      assert.strictEqual(parsed.toolCalls[1].success, true);
+      assert.strictEqual(parsed.errors.length, 1);
+    });
+  });
+
   test('getCostBreakdown folds cache buckets into the total', () => {
     const breakdown = SessionAnalyzer.getCostBreakdown({
       totalTokens: { input: 1000, output: 500, cacheRead: 2000, cacheWrite: 100 },

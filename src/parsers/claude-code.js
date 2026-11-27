@@ -8,6 +8,19 @@ function cacheCreationTokens(value) {
   return (value.ephemeral_5m_input_tokens || 0) + (value.ephemeral_1h_input_tokens || 0);
 }
 
+// Tool results store their output either as a string or as text blocks.
+function toolResultText(content) {
+  if (typeof content === 'string') return content.substring(0, 100) || 'Tool error';
+  if (Array.isArray(content)) {
+    const text = content
+      .filter(block => block && block.type === 'text' && typeof block.text === 'string')
+      .map(block => block.text)
+      .join(' ');
+    return text.substring(0, 100) || 'Tool error';
+  }
+  return 'Tool error';
+}
+
 /**
  * Parse Claude Code session logs
  * Sessions are .jsonl files in ~/.claude/projects/<project>/
@@ -82,6 +95,10 @@ class ClaudeCodeParser {
     // share a message id and repeat its usage object; count each id only once.
     const countedMessageIds = new Set();
 
+    // Tool results are stored in later user messages; index the calls by their
+    // tool_use id so a result can be matched to the call it belongs to.
+    const toolCallsById = new Map();
+
     try {
       const content = fs.readFileSync(filePath, 'utf-8');
       const lines = content.split('\n').filter(Boolean);
@@ -116,6 +133,26 @@ class ClaudeCodeParser {
                 timestamp,
               });
             }
+
+            // Tool results in Claude Code logs are content blocks inside user
+            // messages, not top-level entries. Match them by tool_use_id.
+            if (Array.isArray(msg.content)) {
+              for (const block of msg.content) {
+                if (!block || block.type !== 'tool_result') continue;
+                const isError = block.is_error === true;
+                const toolCall = block.tool_use_id ? toolCallsById.get(block.tool_use_id) : null;
+                if (toolCall) {
+                  toolCall.success = !isError;
+                  if (isError) toolCall.error = toolResultText(block.content);
+                }
+                if (isError) {
+                  parsed.errors.push({
+                    message: toolResultText(block.content),
+                    timestamp,
+                  });
+                }
+              }
+            }
           }
 
           // Process assistant messages
@@ -130,14 +167,16 @@ class ClaudeCodeParser {
                 if (block.type === 'text') {
                   textContent += block.text;
                 } else if (block.type === 'tool_use') {
-                  parsed.toolCalls.push({
+                  const toolCall = {
                     name: block.name || 'unknown',
                     timestamp,
                     duration: null,
                     success: true,
                     error: null,
                     input: block.input ? JSON.stringify(block.input).substring(0, 80) : null,
-                  });
+                  };
+                  parsed.toolCalls.push(toolCall);
+                  if (block.id) toolCallsById.set(block.id, toolCall);
                 }
               }
             }
@@ -160,15 +199,14 @@ class ClaudeCodeParser {
             }
           }
 
-          // Process tool results (errors)
+          // Process tool results (errors) - fallback for logs that store them
+          // as top-level entries instead of user message content blocks.
           if (entry.type === 'tool_result' && entry.message) {
             const isError = entry.message.is_error || false;
             if (isError && parsed.toolCalls.length > 0) {
               const lastTool = parsed.toolCalls[parsed.toolCalls.length - 1];
               lastTool.success = false;
-              lastTool.error = typeof entry.message.content === 'string'
-                ? entry.message.content.substring(0, 100)
-                : 'Tool error';
+              lastTool.error = toolResultText(entry.message.content);
             }
           }
 
