@@ -147,7 +147,7 @@ agent-trace --json
  📊 Session Overview
  ─────────────────────────────────────────────────────
  Duration:    45m 23s
- Messages:    127 (User: 32, AI: 64, Tool: 31)
+ Messages:    127 (User: 32, AI: 95, Tool: 0)
  Tool Calls:  89 (12 unique tools)
  Errors:      3
  Retries:     2
@@ -200,7 +200,7 @@ Options:
   -j, --json            Output as JSON
   -v, --verbose         Show detailed conversation timeline and active periods
   -a, --agent    <name> Agent type (opencode, kimi-code, claude-code, codex)
-  -n, --top      <n>    Show top N sessions by cost (default: 5)
+  -n, --top      <n>    Show top N sessions by cost (positive integer, default: 5)
       --all              Show all sessions (including empty)
       --list-agents      List supported agents
   -h, --help             Display help
@@ -248,7 +248,7 @@ agent-trace -a codex         # Only analyze Codex
 - name: Check agent costs
   run: |
     npx @liangzhengtao/agent-trace --json > trace.json
-    COST=$(jq '.costBreakdown.total.cost' trace.json)
+    COST=$(jq 'if type == "array" then ([.[].costBreakdown.total.cost] | add // 0) else (.costBreakdown.total.cost // 0) end' trace.json)
     if (( $(echo "$COST > 10" | bc -l) )); then
       echo "Agent cost too high: $COST"
       exit 1

@@ -36,7 +36,7 @@ program
   .option('-v, --verbose', 'Show detailed conversation timeline and active periods')
   .option('-a, --agent <type>', 'Agent type (opencode, claude-code, kimi-code, codex)', 'auto')
   .option('--list-agents', 'List supported agents')
-  .option('-n, --top <count>', 'Show top N sessions by cost', '5')
+  .option('-n, --top <count>', 'Show top N sessions by cost (positive integer)', '5')
   .option('--all', 'Show all sessions (including empty)')
   .addHelpText('after', `
 ${chalk.bold('Examples:')}
@@ -64,6 +64,16 @@ ${chalk.bold('Supported Agents:')}
 
 const opts = program.opts();
 
+// parseInt() silently turned "-n 0" and "-n abc" into 5 and let "-n -1" print a
+// nonsensical "Top -1" table, so validate the option explicitly instead.
+function parseTopCount(raw) {
+  const count = Number(raw);
+  if (!Number.isInteger(count) || count < 1) {
+    throw new Error(`Invalid --top value "${raw}": expected a positive integer (e.g. -n 5).`);
+  }
+  return count;
+}
+
 if (opts.listAgents) {
   console.log('\nSupported agents:\n');
   for (const [name, info] of Object.entries(AGENTS)) {
@@ -75,6 +85,7 @@ if (opts.listAgents) {
 }
 
 async function main() {
+  const topN = parseTopCount(opts.top);
   if (program.args.length && !fs.statSync(path.resolve(program.args[0])).isDirectory()) {
     throw new Error('Session input must be a directory');
   }
@@ -227,7 +238,6 @@ async function main() {
     console.log('');
 
     // Top sessions table
-    const topN = parseInt(opts.top) || 5;
     const topSessions = parsedSessions.slice(0, topN);
 
     console.log(chalk.bold(`  💰 Top ${topN} Most Expensive Sessions`));

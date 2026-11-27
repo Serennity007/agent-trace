@@ -99,7 +99,7 @@ agent-trace --json
   📊 Session Overview
   ─────────────────────────────────────────────────────
   Duration: 45m 23s
-  Messages: 127 (User: 32, AI: 64, Tool: 31)
+  Messages: 127 (User: 32, AI: 95, Tool: 0)
   Tool Calls: 89 (12 unique tools)
   Errors: 3
   Retries: 2
@@ -192,7 +192,7 @@ agent-trace -a codex         # Solo analizar Codex
 - name: Check agent costs
   run: |
     npx @liangzhengtao/agent-trace --json > trace.json
-    COST=$(jq '.costBreakdown.total.cost' trace.json)
+    COST=$(jq 'if type == "array" then ([.[].costBreakdown.total.cost] | add // 0) else (.costBreakdown.total.cost // 0) end' trace.json)
     if (( $(echo "$COST > 10" | bc -l) )); then
       echo "Costo del agente demasiado alto: $COST"
       exit 1

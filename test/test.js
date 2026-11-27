@@ -27,6 +27,22 @@ function claudeEntry(id, content, usage, timestamp) {
   });
 }
 
+function withClaudeProject(files, fn) {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'agent-trace-claude-projects-'));
+  try {
+    const projectDir = path.join(dir, 'project-a');
+    fs.mkdirSync(projectDir, { recursive: true });
+    for (const [name, lines] of Object.entries(files)) {
+      fs.writeFileSync(path.join(projectDir, name), lines.join('\n') + '\n', 'utf-8');
+    }
+    const parser = new ClaudeCodeParser();
+    parser.sessionPaths = [dir];
+    return fn(parser.findSessions());
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+}
+
 function withCodexSession(entries, fn) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'agent-trace-codex-'));
   try {
@@ -310,6 +326,23 @@ async function runTests() {
     });
   });
 
+  test('keeps a two-entry session as content but filters a single entry', () => {
+    withClaudeProject({
+      'two-entries.jsonl': [
+        JSON.stringify({ type: 'user', message: { role: 'user', content: 'hi' } }),
+        claudeEntry('msg_1', [{ type: 'text', text: 'hello' }],
+          { input_tokens: 1, output_tokens: 1 }, '2026-01-01T00:00:01Z'),
+      ],
+      'one-entry.jsonl': [
+        JSON.stringify({ type: 'user', message: { role: 'user', content: 'hi' } }),
+      ],
+    }, sessions => {
+      const contentById = Object.fromEntries(sessions.map(s => [s.id, s.hasContent]));
+      assert.strictEqual(contentById['two-entries'], true);
+      assert.strictEqual(contentById['one-entry'], false);
+    });
+  });
+
   // Codex parser: cumulative token_count usage and per-agent pricing
   console.log('\n📋 Codex Parser:');
   test('prices Codex tokens once and agrees with the analyzer breakdown', () => {
@@ -406,6 +439,25 @@ async function runTests() {
       const parsed = parser.parseSession(parser.findSessions()[0]);
       assert.strictEqual(parsed.agentName, 'kimi-code');
       assertOneCostOfTruth(parsed, 0.009585);
+    });
+  });
+
+  test('records errors from nested tool.result events', () => {
+    withKimiSession({
+      main: [
+        { type: 'context.append_loop_event', time: '2026-01-01T00:00:02Z', event: { type: 'tool.call', name: 'Bash', description: 'false' } },
+        { type: 'context.append_loop_event', time: '2026-01-01T00:00:03Z', event: { type: 'tool.result', error: 'exit code 1' } },
+      ],
+    }, dir => {
+      const parser = new KimiCodeParser();
+      parser.sessionPaths = [dir];
+      const parsed = parser.parseSession(parser.findSessions()[0]);
+      assert.strictEqual(parsed.errors.length, 1);
+      assert.strictEqual(parsed.errors[0].message, 'exit code 1');
+      assert.strictEqual(parsed.toolCalls.length, 1);
+      assert.strictEqual(parsed.toolCalls[0].success, false);
+      assert.strictEqual(parsed.toolCalls[0].error, 'exit code 1');
+      assert.strictEqual(parsed.toolCalls[0].duration, 1);
     });
   });
 
@@ -511,6 +563,20 @@ async function runTests() {
     assert.strictEqual(usage.read.successRate, 100);
     assert.strictEqual(usage.write.count, 1);
     assert.strictEqual(usage.write.successRate, 0);
+  });
+
+  test('getToolUsage averages only calls with a known duration', () => {
+    const usage = SessionAnalyzer.getToolUsage([
+      { name: 'Bash', duration: 2, success: true },
+      { name: 'Bash', duration: null, success: true },
+      { name: 'Bash', duration: 4, success: true },
+      { name: 'Read', duration: null, success: true },
+    ]);
+    assert.strictEqual(usage.Bash.count, 3);
+    assert.strictEqual(usage.Bash.totalDuration, 6);
+    // 6s over the 2 timed calls, not over all 3 calls.
+    assert.strictEqual(usage.Bash.avgDuration, 3);
+    assert.strictEqual(usage.Read.avgDuration, 0);
   });
 
   console.log(`\n${'='.repeat(50)}`);

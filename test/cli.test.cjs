@@ -70,3 +70,46 @@ test('--verbose toggles the conversation and active-period sections in terminal 
   assert.ok(verbose.stdout.includes('Active Periods'), 'active periods should render with -v');
   assert.ok(verbose.stdout.includes('[YOU]'));
 });
+test('--top rejects non-positive or non-numeric values with a clear error', () => withFolder(dir => {
+  for (const id of ['fixture-one', 'fixture-two', 'fixture-three']) {
+    fs.writeFileSync(path.join(dir, `${id}.json`), JSON.stringify({ ...demo, id }));
+  }
+  for (const bad of ['0', '-1', 'abc']) {
+    const result = runTerminal(dir, '-n', bad);
+    assert.notEqual(result.status, 0, `-n ${bad} should exit nonzero`);
+    assert.match(result.stderr, /Invalid --top value/, `-n ${bad} should explain the error`);
+    assert.ok(!result.stdout.includes('Top '), `-n ${bad} should not print a table`);
+  }
+  const single = runTerminal(dir, '-n', '1');
+  assert.equal(single.status, 0, single.stderr);
+  assert.match(single.stdout, /Top 1 Most Expensive Sessions/);
+  assert.equal((single.stdout.match(/^\s+\d+\s+fixture-/gm) || []).length, 1);
+
+  const larger = runTerminal(dir, '-n', '10');
+  assert.equal(larger.status, 0, larger.stderr);
+  assert.match(larger.stdout, /Top 10 Most Expensive Sessions/);
+  assert.equal((larger.stdout.match(/^\s+\d+\s+fixture-/gm) || []).length, 3);
+}));
+test('Codex JSON reports one estimated cost and cost breakdown', () => withFolder(dir => {
+  const day = path.join(dir, '2026', '01', '01');
+  fs.mkdirSync(day, { recursive: true });
+  fs.writeFileSync(path.join(day, 'codex-session.jsonl'), [
+    JSON.stringify({ type: 'session_meta', timestamp: '2026-01-01T00:00:00Z', payload: { id: 'codex-session' } }),
+    JSON.stringify({
+      type: 'event_msg',
+      timestamp: '2026-01-01T00:00:05Z',
+      payload: { type: 'token_count', info: { total_token_usage: { input_tokens: 1000000, output_tokens: 1000000 } } },
+    }),
+  ].join('\n') + '\n');
+  const result = spawnSync(
+    process.execPath,
+    [path.join(root, 'bin/cli.js'), dir, '-a', 'codex', '--json'],
+    { encoding: 'utf8' },
+  );
+  assert.equal(result.status, 0, result.stderr);
+  const report = JSON.parse(result.stdout);
+  assert.equal(report.agent, 'codex');
+  assert.equal(report.stats.estimatedCost, 12.5);
+  assert.equal(report.costBreakdown.total.cost, 12.5);
+  assert.equal(report.costBreakdown.input.cost + report.costBreakdown.output.cost, 12.5);
+}));

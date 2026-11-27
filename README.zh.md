@@ -190,7 +190,7 @@ agent-trace -a codex         # 只分析 Codex
 - name: Check agent costs
   run: |
     npx @liangzhengtao/agent-trace --json > trace.json
-    COST=$(jq '.costBreakdown.total.cost' trace.json)
+    COST=$(jq 'if type == "array" then ([.[].costBreakdown.total.cost] | add // 0) else (.costBreakdown.total.cost // 0) end' trace.json)
     if (( $(echo "$COST > 10" | bc -l) )); then
       echo "Agent 花费过高: $COST"
       exit 1
